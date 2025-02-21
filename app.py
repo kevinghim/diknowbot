@@ -267,28 +267,29 @@ if st.session_state['documents_loaded']:
             user_input = st.text_area(
                 "Ask a question about your documents:",
                 height=None,
-                key="input_area"
+                key="input_area",
+                on_change=None  # Allow default Enter behavior
             )
         with col2:
             submit_button = st.button("↑")
 
         # Handle input submission
-        if submit_button or (user_input and user_input.endswith('\n')):
-            if user_input and user_input.strip():
+        if submit_button or (user_input and len(user_input) > 0 and user_input[-1] == '\n'):
+            current_input = user_input.strip()  # Remove trailing newline and whitespace
+            if current_input:
                 try:
-                    question = user_input.strip()
                     # Get response from chain
                     result = chain({
-                        "question": question, 
+                        "question": current_input, 
                         "chat_history": st.session_state["generated"]
                     })
                     response = result['answer']
                     
                     # Update chat history
-                    st.session_state['past'].append(question)
-                    st.session_state['generated'].append((question, response))
+                    st.session_state['past'].append(current_input)
+                    st.session_state['generated'].append((current_input, response))
                     
-                    # Use the current rerun method
+                    # Rerun to update UI
                     st.rerun()
                     
                 except Exception as e:
