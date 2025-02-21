@@ -267,6 +267,10 @@ if st.session_state['documents_loaded']:
             model_provider.lower(),
             model_name
         )
+
+        # Initialize input state if not exists
+        if "input_value" not in st.session_state:
+            st.session_state.input_value = ""
         
         # Chat interface
         col1, col2 = st.columns([0.85, 0.15])
@@ -275,30 +279,31 @@ if st.session_state['documents_loaded']:
                 "Ask a question about your documents:",
                 height=None,
                 key="input_area",
-                on_change=handle_enter,
-                args=('Enter',)
+                value=st.session_state.input_value
             )
         with col2:
             submit_button = st.button("↑")
 
         # Handle input submission
-        if submit_button or st.session_state.submit_pressed:
-            if user_input and user_input.strip():
+        if submit_button or (user_input and user_input.endswith('\n')):
+            current_input = user_input.rstrip('\n').strip()
+            if current_input:
                 try:
-                    question = user_input.strip()
                     # Get response from chain
                     result = chain({
-                        "question": question, 
+                        "question": current_input, 
                         "chat_history": st.session_state["generated"]
                     })
                     response = result['answer']
                     
                     # Update chat history
-                    st.session_state['past'].append(question)
-                    st.session_state['generated'].append((question, response))
+                    st.session_state['past'].append(current_input)
+                    st.session_state['generated'].append((current_input, response))
                     
-                    # Reset submit state and rerun
-                    st.session_state.submit_pressed = False
+                    # Clear input value in session state
+                    st.session_state.input_value = ""
+                    
+                    # Rerun without the intermediate state
                     st.rerun()
                     
                 except Exception as e:
