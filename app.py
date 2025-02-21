@@ -264,6 +264,9 @@ if st.session_state['documents_loaded']:
         # Initialize chat input state if not exists
         if "user_question" not in st.session_state:
             st.session_state.user_question = ""
+            
+        if "input_area" not in st.session_state:
+            st.session_state.input_area = ""
         
         # Chat interface
         col1, col2 = st.columns([0.85, 0.15])
@@ -271,40 +274,35 @@ if st.session_state['documents_loaded']:
             user_input = st.text_area(
                 "Ask a question about your documents:",
                 height=None,
-                key="input_area"
+                key="input_area",
+                value=st.session_state.input_area
             )
         with col2:
             submit_button = st.button("↑")
 
         # Handle input submission
-        if submit_button and user_input:
-            st.session_state.user_question = user_input.strip()
-        elif user_input and user_input.endswith('\n'):
-            st.session_state.user_question = user_input.strip()
-
-        # Process the question if we have one
-        if st.session_state.user_question:
-            try:
-                # Get response from chain
-                result = chain({
-                    "question": st.session_state.user_question, 
-                    "chat_history": st.session_state["generated"]
-                })
-                response = result['answer']
-                
-                # Update chat history
-                st.session_state['past'].append(st.session_state.user_question)
-                st.session_state['generated'].append((st.session_state.user_question, response))
-                
-                # Clear the input
-                st.session_state.user_question = ""
-                st.session_state.input_area = ""
-                
-                # Rerun to update UI
-                st.rerun()
-                
-            except Exception as e:
-                st.error(f"Error generating response: {str(e)}")
+        if submit_button or (user_input and user_input.endswith('\n')):
+            if user_input and user_input.strip():
+                try:
+                    # Get response from chain
+                    result = chain({
+                        "question": user_input.strip(), 
+                        "chat_history": st.session_state["generated"]
+                    })
+                    response = result['answer']
+                    
+                    # Update chat history
+                    st.session_state['past'].append(user_input.strip())
+                    st.session_state['generated'].append((user_input.strip(), response))
+                    
+                    # Clear the input by updating session state
+                    st.session_state.input_area = ""
+                    
+                    # Rerun to update UI
+                    st.rerun()
+                    
+                except Exception as e:
+                    st.error(f"Error generating response: {str(e)}")
 
         # Display chat history (oldest first)
         if st.session_state['generated']:
