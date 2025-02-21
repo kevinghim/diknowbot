@@ -256,78 +256,29 @@ if st.session_state['documents_loaded']:
         )
         
         api_key = anthropic_api_key if model_provider == "Anthropic" else openai_api_key
-        embeddings_api_key = openai_api_key  # Always use OpenAI for embeddings
-        
         chain = load_chain(
             vector_store,
-            api_key=api_key,
-            collection_name=collection_name,
-            model_type=model_provider.lower(),
-            model_name=model_name
+            api_key,
+            collection_name,
+            model_provider.lower(),
+            model_name
         )
         
-        # Create a fixed bottom container with custom HTML/CSS
-        st.markdown(
-            """
-            <style>
-            .fixed-bottom {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                background-color: white;
-                padding: 20px;
-                z-index: 999;
-                border-top: 1px solid #ddd;
-                margin-left: -4rem;  /* Adjust for Streamlit's default padding */
-                margin-right: -4rem;
-                padding-left: 4rem;  /* Add back padding for content alignment */
-                padding-right: 4rem;
-            }
-            .main-content {
-                margin-bottom: 120px; /* Adjust based on your input box height */
-                padding-bottom: 4rem;
-            }
-            .stTextArea textarea {
-                resize: none;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
-        
-        # Main content container with margin at bottom
-        with st.container():
-            st.markdown('<div class="main-content">', unsafe_allow_html=True)
-            if st.session_state['generated']:
-                for i in range(len(st.session_state['generated'])):
-                    message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
-                    message(st.session_state["generated"][i][1], key=str(i))
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Fixed input container at bottom
-        with st.container():
-            st.markdown('<div class="fixed-bottom">', unsafe_allow_html=True)
-            col1, col2 = st.columns([8, 1])
-            
-            with col1:
-                user_input = st.text_area(
-                    "Ask a question about your documents:",
-                    key="user_input",
-                    height=None,
-                    on_change=None  # Allow default Enter behavior
-                )
-                
-            with col2:
-                submit_button = st.button("↑")
-            st.markdown('</div>', unsafe_allow_html=True)
+        # Chat interface with columns for input and submit button
+        col1, col2 = st.columns([0.85, 0.15])
+        with col1:
+            user_input = st.text_area(
+                "Ask a question about your documents:",
+                key="user_input",
+                height=None
+            )
+        with col2:
+            submit_button = st.button("↑")
 
-        # Handle input (both button click and Enter key)
-        if (submit_button or (user_input and user_input.endswith('\n'))) and user_input and user_input.strip():
+        # Handle input when button is clicked or Enter is pressed
+        if (submit_button or (user_input and user_input.endswith('\n'))) and user_input.strip():
             question = user_input.strip()
-            
-            # Only process if it's a new question
-            if question != st.session_state.get('last_question', ''):
+            try:
                 # Get response from chain
                 result = chain({"question": question, "chat_history": st.session_state["generated"]})
                 response = result['answer']
@@ -335,14 +286,20 @@ if st.session_state['documents_loaded']:
                 # Update session state
                 st.session_state['past'].append(question)
                 st.session_state['generated'].append((question, response))
-                st.session_state['last_question'] = question
                 
                 # Clear input
                 st.session_state.user_input = ""
+                st.rerun()
                 
-                # Rerun to update the UI
-                st.experimental_rerun()
+            except Exception as e:
+                st.error(f"Error generating response: {str(e)}")
 
+        # Display chat history (oldest first)
+        if st.session_state['generated']:
+            for i in range(len(st.session_state['generated'])):
+                message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
+                message(st.session_state["generated"][i][1], key=str(i))
+                
     except Exception as e:
         st.error(f"Error initializing chat interface: {str(e)}")
 else:
