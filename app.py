@@ -261,21 +261,13 @@ if st.session_state['documents_loaded']:
             model_name
         )
         
-        # Initialize chat input state if not exists
-        if "user_question" not in st.session_state:
-            st.session_state.user_question = ""
-            
-        if "input_area" not in st.session_state:
-            st.session_state.input_area = ""
-        
         # Chat interface
         col1, col2 = st.columns([0.85, 0.15])
         with col1:
             user_input = st.text_area(
                 "Ask a question about your documents:",
                 height=None,
-                key="input_area",
-                value=st.session_state.input_area
+                key="input_area"
             )
         with col2:
             submit_button = st.button("↑")
@@ -284,22 +276,20 @@ if st.session_state['documents_loaded']:
         if submit_button or (user_input and user_input.endswith('\n')):
             if user_input and user_input.strip():
                 try:
+                    question = user_input.strip()
                     # Get response from chain
                     result = chain({
-                        "question": user_input.strip(), 
+                        "question": question, 
                         "chat_history": st.session_state["generated"]
                     })
                     response = result['answer']
                     
                     # Update chat history
-                    st.session_state['past'].append(user_input.strip())
-                    st.session_state['generated'].append((user_input.strip(), response))
+                    st.session_state['past'].append(question)
+                    st.session_state['generated'].append((question, response))
                     
-                    # Clear the input by updating session state
-                    st.session_state.input_area = ""
-                    
-                    # Rerun to update UI
-                    st.rerun()
+                    # Use form_submit_button to handle clearing
+                    st.experimental_rerun()
                     
                 except Exception as e:
                     st.error(f"Error generating response: {str(e)}")
