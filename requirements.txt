@@ -20,6 +20,7 @@ packaging==23.2
 pydantic==2.10.6
 pydantic_core==2.27.2
 PyPDF2
+pytesseract
 PyYAML==6.0.2
 regex==2024.11.6
 requests==2.32.3
