@@ -288,8 +288,8 @@ if st.session_state['documents_loaded']:
                     st.session_state['past'].append(question)
                     st.session_state['generated'].append((question, response))
                     
-                    # Use form_submit_button to handle clearing
-                    st.experimental_rerun()
+                    # Use the current rerun method
+                    st.rerun()
                     
                 except Exception as e:
                     st.error(f"Error generating response: {str(e)}")
