@@ -261,29 +261,46 @@ if st.session_state['documents_loaded']:
             model_name
         )
         
+        # Initialize chat input state if not exists
+        if "user_question" not in st.session_state:
+            st.session_state.user_question = ""
+        
         # Chat interface
         col1, col2 = st.columns([0.85, 0.15])
         with col1:
             user_input = st.text_area(
                 "Ask a question about your documents:",
-                key="user_input",
-                height=None
+                height=None,
+                key="input_area"
             )
         with col2:
             submit_button = st.button("↑")
 
-        if (submit_button or (user_input and user_input.endswith('\n'))) and user_input.strip():
+        # Handle input submission
+        if submit_button and user_input:
+            st.session_state.user_question = user_input.strip()
+        elif user_input and user_input.endswith('\n'):
+            st.session_state.user_question = user_input.strip()
+
+        # Process the question if we have one
+        if st.session_state.user_question:
             try:
                 # Get response from chain
-                result = chain({"question": user_input.strip(), "chat_history": st.session_state["generated"]})
+                result = chain({
+                    "question": st.session_state.user_question, 
+                    "chat_history": st.session_state["generated"]
+                })
                 response = result['answer']
                 
-                # Update session state
-                st.session_state['past'].append(user_input.strip())
-                st.session_state['generated'].append((user_input.strip(), response))
+                # Update chat history
+                st.session_state['past'].append(st.session_state.user_question)
+                st.session_state['generated'].append((st.session_state.user_question, response))
                 
-                # Clear input
-                st.session_state.user_input = ""
+                # Clear the input
+                st.session_state.user_question = ""
+                st.session_state.input_area = ""
+                
+                # Rerun to update UI
                 st.rerun()
                 
             except Exception as e:
