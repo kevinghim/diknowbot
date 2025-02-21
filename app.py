@@ -268,13 +268,18 @@ if st.session_state['documents_loaded']:
             model_name
         )
         
+        # Initialize input state if not exists
+        if "input_text" not in st.session_state:
+            st.session_state.input_text = ""
+        
         # Chat interface
         col1, col2 = st.columns([0.85, 0.15])
         with col1:
             user_input = st.text_area(
                 "Ask a question about your documents:",
                 height=None,
-                key="input_area"
+                key="input_area",
+                value=st.session_state.input_text
             )
         with col2:
             submit_button = st.button("↑")
@@ -295,10 +300,8 @@ if st.session_state['documents_loaded']:
                     st.session_state['past'].append(current_input)
                     st.session_state['generated'].append((current_input, response))
                     
-                    # Clear input value in session state
-                    st.session_state.input_area = ""
-                    
-                    # Rerun without the intermediate state
+                    # Clear input
+                    st.session_state.input_text = ""
                     st.rerun()
                     
                 except Exception as e:
