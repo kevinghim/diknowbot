@@ -313,7 +313,7 @@ if st.session_state['documents_loaded']:
             with col1:
                 user_input = st.text_area(
                     "Ask a question about your documents:",
-                    key="input_field",
+                    key="user_input",
                     height=None
                 )
                 
@@ -322,7 +322,7 @@ if st.session_state['documents_loaded']:
             st.markdown('</div>', unsafe_allow_html=True)
 
         # Handle input
-        if (submit_button or user_input) and user_input.strip():
+        if submit_button and user_input and user_input.strip():
             question = user_input.strip()
             
             # Only process if it's a new question
@@ -336,11 +336,11 @@ if st.session_state['documents_loaded']:
                 st.session_state['generated'].append((question, response))
                 st.session_state['last_question'] = question
                 
-                # Clear input using session state
-                st.session_state.input_field = ""
+                # Clear input
+                st.session_state.user_input = ""
                 
                 # Rerun to update the UI
-                st.rerun()
+                st.experimental_rerun()
 
     except Exception as e:
         st.error(f"Error initializing chat interface: {str(e)}")
