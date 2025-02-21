@@ -36,9 +36,6 @@ if 'documents_loaded' not in st.session_state:
 if 'temp_file_paths' not in st.session_state:
     st.session_state['temp_file_paths'] = []
 
-if 'input_field' not in st.session_state:
-    st.session_state.input_field = ""
-
 # Function to save uploaded files temporarily
 def save_uploaded_file(uploaded_file) -> str:
     try:
@@ -264,7 +261,7 @@ if st.session_state['documents_loaded']:
             model_name
         )
         
-        # Chat interface with columns for input and submit button
+        # Chat interface
         col1, col2 = st.columns([0.85, 0.15])
         with col1:
             user_input = st.text_area(
@@ -275,17 +272,15 @@ if st.session_state['documents_loaded']:
         with col2:
             submit_button = st.button("↑")
 
-        # Handle input when button is clicked or Enter is pressed
         if (submit_button or (user_input and user_input.endswith('\n'))) and user_input.strip():
-            question = user_input.strip()
             try:
                 # Get response from chain
-                result = chain({"question": question, "chat_history": st.session_state["generated"]})
+                result = chain({"question": user_input.strip(), "chat_history": st.session_state["generated"]})
                 response = result['answer']
                 
                 # Update session state
-                st.session_state['past'].append(question)
-                st.session_state['generated'].append((question, response))
+                st.session_state['past'].append(user_input.strip())
+                st.session_state['generated'].append((user_input.strip(), response))
                 
                 # Clear input
                 st.session_state.user_input = ""
