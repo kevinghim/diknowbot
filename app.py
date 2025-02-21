@@ -36,6 +36,9 @@ if 'documents_loaded' not in st.session_state:
 if 'temp_file_paths' not in st.session_state:
     st.session_state['temp_file_paths'] = []
 
+if 'input_field' not in st.session_state:
+    st.session_state.input_field = ""
+
 # Function to save uploaded files temporarily
 def save_uploaded_file(uploaded_file) -> str:
     try:
@@ -308,12 +311,8 @@ if st.session_state['documents_loaded']:
             col1, col2 = st.columns([8, 1])
             
             with col1:
-                if 'input_field' not in st.session_state:
-                    st.session_state['input_field'] = ""
-                
                 user_input = st.text_area(
                     "Ask a question about your documents:",
-                    placeholder="What would you like to know about your documents?",
                     key="input_field",
                     height=None
                 )
@@ -323,26 +322,25 @@ if st.session_state['documents_loaded']:
             st.markdown('</div>', unsafe_allow_html=True)
 
         # Handle input
-        if submit_button or user_input:  # Check for input
-            if user_input and user_input.strip():  # Verify input has content
-                question = user_input.strip()
+        if (submit_button or user_input) and user_input.strip():
+            question = user_input.strip()
+            
+            # Only process if it's a new question
+            if question != st.session_state.get('last_question', ''):
+                # Get response from chain
+                result = chain({"question": question, "chat_history": st.session_state["generated"]})
+                response = result['answer']
                 
-                # Only process if it's a new question
-                if question != st.session_state.get('last_question', ''):
-                    # Get response from chain
-                    result = chain({"question": question, "chat_history": st.session_state["generated"]})
-                    response = result['answer']
-                    
-                    # Update session state
-                    st.session_state['past'].append(question)
-                    st.session_state['generated'].append((question, response))
-                    st.session_state['last_question'] = question  # Store the last question
-                    
-                    # Clear input using form_submit_button
-                    st.session_state['input_field'] = ""
-                    
-                    # Rerun to update the UI
-                    st.rerun()
+                # Update session state
+                st.session_state['past'].append(question)
+                st.session_state['generated'].append((question, response))
+                st.session_state['last_question'] = question
+                
+                # Clear input using session state
+                st.session_state.input_field = ""
+                
+                # Rerun to update the UI
+                st.rerun()
 
     except Exception as e:
         st.error(f"Error initializing chat interface: {str(e)}")
