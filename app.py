@@ -36,6 +36,9 @@ if 'documents_loaded' not in st.session_state:
 if 'temp_file_paths' not in st.session_state:
     st.session_state['temp_file_paths'] = []
 
+if 'submit_pressed' not in st.session_state:
+    st.session_state.submit_pressed = False
+
 # Function to save uploaded files temporarily
 def save_uploaded_file(uploaded_file) -> str:
     try:
@@ -56,6 +59,10 @@ def cleanup_temp_files():
         except Exception as e:
             st.error(f"Error removing temporary file {file_path}: {str(e)}")
     st.session_state['temp_file_paths'] = []
+
+def handle_enter(key):
+    if key == 'Enter':
+        st.session_state.submit_pressed = True
 
 # Main app title
 st.title('📚 Chat with Your Documents')
@@ -268,28 +275,30 @@ if st.session_state['documents_loaded']:
                 "Ask a question about your documents:",
                 height=None,
                 key="input_area",
-                on_change=None  # Allow default Enter behavior
+                on_change=handle_enter,
+                args=('Enter',)
             )
         with col2:
             submit_button = st.button("↑")
 
         # Handle input submission
-        if submit_button or (user_input and len(user_input) > 0 and user_input[-1] == '\n'):
-            current_input = user_input.strip()  # Remove trailing newline and whitespace
-            if current_input:
+        if submit_button or st.session_state.submit_pressed:
+            if user_input and user_input.strip():
                 try:
+                    question = user_input.strip()
                     # Get response from chain
                     result = chain({
-                        "question": current_input, 
+                        "question": question, 
                         "chat_history": st.session_state["generated"]
                     })
                     response = result['answer']
                     
                     # Update chat history
-                    st.session_state['past'].append(current_input)
-                    st.session_state['generated'].append((current_input, response))
+                    st.session_state['past'].append(question)
+                    st.session_state['generated'].append((question, response))
                     
-                    # Rerun to update UI
+                    # Reset submit state and rerun
+                    st.session_state.submit_pressed = False
                     st.rerun()
                     
                 except Exception as e:
