@@ -147,17 +147,15 @@ with st.sidebar:
         st.subheader("Vector Database Settings")
         
         # Check if running on Streamlit Cloud
-        is_deployed = st.secrets.get("STREAMLIT_DEPLOYED", "false").lower() == 'true'
-
-        # Initialize qdrant settings
-        if is_deployed:
-            # Get settings from secrets
-            qdrant_host = st.secrets.get("QDRANT_HOST")
-            qdrant_api_key = st.secrets.get("QDRANT_API_KEY")
+        try:
+            is_deployed = st.secrets["STREAMLIT_DEPLOYED"]
+            qdrant_host = st.secrets["QDRANT_HOST"]
+            qdrant_api_key = st.secrets["QDRANT_API_KEY"]
             qdrant_port = None
             st.write(f"Using cloud Qdrant instance at {qdrant_host}")
-        else:
+        except Exception:
             # Local development settings
+            is_deployed = False
             qdrant_host = st.text_input(
                 "Qdrant Host",
                 value="localhost",
