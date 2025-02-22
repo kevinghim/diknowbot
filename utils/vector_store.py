@@ -5,9 +5,9 @@ from langchain.chat_models import ChatAnthropic
 from langchain.chains import ConversationalRetrievalChain
 from langchain.vectorstores.qdrant import Qdrant
 from qdrant_client import QdrantClient
-from qdrant_client.http import models
+from qdrant_client.http import models as rest
+from qdrant_client.http.models import Distance, VectorParams
 import streamlit as st
-from qdrant_client.http.models import VectorParams, Distance
 
 def connect_to_vectorstore(
     host: str,
@@ -27,7 +27,8 @@ def connect_to_vectorstore(
             client = QdrantClient(
                 url=host,
                 api_key=api_key,
-                prefer_grpc=False  # Force HTTP instead of gRPC
+                timeout=60,  # Increase timeout
+                prefer_grpc=False  # Force HTTP
             )
         else:
             # Local connection
@@ -42,11 +43,15 @@ def connect_to_vectorstore(
         except Exception:
             client.create_collection(
                 collection_name=collection_name,
-                vectors_config=VectorParams(size=1536, distance=Distance.COSINE)
+                vectors_config=rest.VectorParams(
+                    size=1536,
+                    distance=rest.Distance.COSINE
+                )
             )
             
         return client
     except Exception as e:
+        st.error(f"Connection error details: {str(e)}")
         raise Exception(f"Failed to connect to Qdrant: {str(e)}")
 
 def load_data_into_vectorstore(
@@ -58,43 +63,25 @@ def load_data_into_vectorstore(
 ) -> None:
     """
     Load text chunks into Qdrant vector store
-    
-    Args:
-        client (QdrantClient): Qdrant client
-        texts (List[str]): List of text chunks to load
-        api_key (str): OpenAI API key for embeddings
-        collection_name (str): Name of the collection
-        connection_params (Dict): Connection parameters
     """
     try:
-        # Debug logging
-        print(f"Loading data with params: {connection_params}")
-        
         # Use OpenAI embeddings
         embeddings = OpenAIEmbeddings(openai_api_key=api_key)
         
-        if connection_params['is_cloud']:
-            print("Using cloud configuration for loading data")
-            Qdrant.from_texts(
-                texts=texts,
-                embedding=embeddings,
-                url=connection_params['host'],
-                api_key=connection_params['api_key'],
-                collection_name=collection_name,
-                force_recreate=True
+        # Create vectors
+        vectors = embeddings.embed_documents(texts)
+        
+        # Upload directly using client
+        client.upsert(
+            collection_name=collection_name,
+            points=rest.Batch(
+                ids=[str(i) for i in range(len(texts))],
+                vectors=vectors,
+                payloads=[{"text": text} for text in texts]
             )
-        else:
-            print("Using local configuration for loading data")
-            Qdrant.from_texts(
-                texts=texts,
-                embedding=embeddings,
-                host=connection_params['host'],
-                port=connection_params['port'],
-                collection_name=collection_name,
-                force_recreate=True
-            )
+        )
     except Exception as e:
-        print(f"Data loading error: {str(e)}")
+        st.error(f"Data loading error details: {str(e)}")
         raise Exception(f"Error loading data into vector store: {str(e)}")
 
 def load_chain(client: QdrantClient, api_key: str,
