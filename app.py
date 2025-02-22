@@ -250,7 +250,12 @@ if load_data_button:
                         chunks,
                         openai_api_key,
                         collection_name,
-                        connection_params
+                        {
+                            'is_cloud': is_deployed,
+                            'host': qdrant_host,
+                            'port': qdrant_port,
+                            'api_key': qdrant_api_key
+                        }
                     )
                     
                     st.session_state['documents_loaded'] = True

@@ -59,7 +59,7 @@ def load_data_into_vectorstore(
     texts: List[str],
     api_key: str,
     collection_name: str = "documents_collection",
-    connection_params: Dict = None
+    connection_params: Optional[Dict] = None
 ) -> None:
     """
     Load text chunks into Qdrant vector store
@@ -71,6 +71,9 @@ def load_data_into_vectorstore(
         # Create vectors
         vectors = embeddings.embed_documents(texts)
         
+        # Debug info
+        st.write(f"Debug - Loading {len(texts)} documents into collection: {collection_name}")
+        
         # Upload directly using client
         client.upsert(
             collection_name=collection_name,
@@ -80,6 +83,8 @@ def load_data_into_vectorstore(
                 payloads=[{"text": text} for text in texts]
             )
         )
+        
+        st.success(f"Successfully loaded {len(texts)} documents into Qdrant")
     except Exception as e:
         st.error(f"Data loading error details: {str(e)}")
         raise Exception(f"Error loading data into vector store: {str(e)}")
