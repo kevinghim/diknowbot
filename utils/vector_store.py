@@ -31,6 +31,15 @@ def connect_to_vectorstore(
                 timeout=60,  # Increase timeout
                 prefer_grpc=False  # Force HTTP
             )
+            
+            # Create Qdrant instance for retriever
+            qdrant = Qdrant(
+                client=client,
+                collection_name=collection_name,
+                embeddings=OpenAIEmbeddings()  # We'll configure this later with the OpenAI key
+            )
+            
+            return qdrant
         else:
             # Local connection
             client = QdrantClient(
@@ -38,19 +47,15 @@ def connect_to_vectorstore(
                 port=port
             )
             
-        # Try to get or create collection
-        try:
-            client.get_collection(collection_name)
-        except Exception:
-            client.create_collection(
+            # Create Qdrant instance for retriever
+            qdrant = Qdrant(
+                client=client,
                 collection_name=collection_name,
-                vectors_config=rest.VectorParams(
-                    size=1536,
-                    distance=rest.Distance.COSINE
-                )
+                embeddings=OpenAIEmbeddings()  # We'll configure this later with the OpenAI key
             )
             
-        return client
+            return qdrant
+            
     except Exception as e:
         st.error(f"Connection error details: {str(e)}")
         raise Exception(f"Failed to connect to Qdrant: {str(e)}")

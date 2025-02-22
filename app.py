@@ -281,7 +281,12 @@ if st.session_state['documents_loaded']:
         vector_store = connect_to_vectorstore(
             host=qdrant_host,
             port=qdrant_port,
+            api_key=qdrant_api_key,
             collection_name=collection_name
+        )
+        
+        retriever = vector_store.as_retriever(
+            search_kwargs={"k": 3}
         )
         
         api_key = anthropic_api_key if model_provider == "Anthropic" else openai_api_key
