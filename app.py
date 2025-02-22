@@ -19,8 +19,6 @@ from utils.vector_store import (
     load_data_into_vectorstore,
     load_chain
 )
-from utils.document_processing import process_file, cleanup_temp_files
-from utils.notion_integration import get_notion_pages
 
 # Set page config
 st.set_page_config(
@@ -127,7 +125,7 @@ with st.sidebar:
             "Load documents from Notion",
             help="Requires Notion API Key"
         )
-        
+    
     with model_config_tab:
         st.subheader("Model Configuration")
         
