@@ -342,7 +342,7 @@ if st.session_state['documents_loaded']:
                     result = qa_chain({"question": user_input})
                     st.session_state['past'].append(user_input)
                     st.session_state['generated'].append(result['answer'])
-                    st.experimental_rerun()
+                    st.rerun()
                 except Exception as e:
                     st.error(str(e))
         
