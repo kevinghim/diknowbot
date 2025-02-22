@@ -147,15 +147,13 @@ with st.sidebar:
         st.subheader("Vector Database Settings")
         
         # Check if running on Streamlit Cloud
-        is_deployed = os.environ.get('STREAMLIT_DEPLOYED', False)
+        is_deployed = os.environ.get('STREAMLIT_DEPLOYED', 'false').lower() == 'true'
 
         # Initialize qdrant settings
         if is_deployed:
             qdrant_host = "https://6037f3a0-f569-4322-bbfa-179e30253d9d.us-east4-0.gcp.cloud.qdrant.io"
             qdrant_api_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.40v8NLDkLdBIKpVjWJuU3ByUr8uVCZ5lpdVcm7q6I3A"
             qdrant_port = None
-            
-            # Hide the settings in deployed version
             st.write("Using cloud Qdrant instance")
         else:
             # Local development settings
@@ -259,6 +257,10 @@ if load_data_button:
                 
                 # Clean up temporary files
                 cleanup_temp_files()
+                
+                # Make sure these environment variables are set for the rest of the app
+                os.environ['QDRANT_HOST'] = qdrant_host
+                os.environ['QDRANT_API_KEY'] = qdrant_api_key if qdrant_api_key else ''
                 
             except Exception as e:
                 st.error(f"Error during document processing: {str(e)}")

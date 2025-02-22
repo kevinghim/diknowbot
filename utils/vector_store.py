@@ -6,52 +6,48 @@ from langchain.chains import ConversationalRetrievalChain
 from langchain.vectorstores.qdrant import Qdrant
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
+import streamlit as st
+from qdrant_client.http.models import VectorParams, Distance
 
 def connect_to_vectorstore(
     host: str,
     port: Optional[int] = None,
     api_key: Optional[str] = None,
     collection_name: str = "documents_collection"
-) -> Tuple[QdrantClient, Dict]:
+) -> QdrantClient:
     """
     Connect to Qdrant vector store
-    
-    Args:
-        host (str): Qdrant host address
-        port (Optional[int]): Port number for local connection
-        api_key (Optional[str]): API key for cloud connection
-        collection_name (str): Name of the collection
-        
-    Returns:
-        Tuple[QdrantClient, Dict]: Configured Qdrant client and connection params
     """
-    # Debug logging
-    print(f"Connecting to Qdrant with: host={host}, port={port}, collection={collection_name}")
-    
-    connection_params = {
-        'is_cloud': host.startswith('http'),
-        'host': host,
-        'port': port,
-        'api_key': api_key
-    }
-    
-    # Debug logging
-    print(f"Connection params: {connection_params}")
-    
     try:
-        if connection_params['is_cloud']:
-            print("Attempting cloud connection...")
-            client = QdrantClient(url=host, api_key=api_key)
-            print("Cloud connection successful")
-            return client, connection_params
+        # Debug logging
+        st.write(f"Connecting to Qdrant at: {host}")
+        
+        if host.startswith('http'):
+            # Cloud connection
+            client = QdrantClient(
+                url=host,
+                api_key=api_key,
+                prefer_grpc=False  # Force HTTP instead of gRPC
+            )
         else:
-            print("Attempting local connection...")
-            client = QdrantClient(host=host, port=port)
-            print("Local connection successful")
-            return client, connection_params
+            # Local connection
+            client = QdrantClient(
+                host=host,
+                port=port
+            )
+            
+        # Try to get or create collection
+        try:
+            client.get_collection(collection_name)
+        except Exception:
+            client.create_collection(
+                collection_name=collection_name,
+                vectors_config=VectorParams(size=1536, distance=Distance.COSINE)
+            )
+            
+        return client
     except Exception as e:
-        print(f"Connection error: {str(e)}")
-        raise Exception(f"Error connecting to Qdrant: {str(e)}")
+        raise Exception(f"Failed to connect to Qdrant: {str(e)}")
 
 def load_data_into_vectorstore(
     client: QdrantClient,
