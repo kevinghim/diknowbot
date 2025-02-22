@@ -25,6 +25,9 @@ def connect_to_vectorstore(
     Returns:
         Tuple[QdrantClient, Dict]: Configured Qdrant client and connection params
     """
+    # Debug logging
+    print(f"Connecting to Qdrant with: host={host}, port={port}, collection={collection_name}")
+    
     connection_params = {
         'is_cloud': host.startswith('http'),
         'host': host,
@@ -32,12 +35,22 @@ def connect_to_vectorstore(
         'api_key': api_key
     }
     
+    # Debug logging
+    print(f"Connection params: {connection_params}")
+    
     try:
         if connection_params['is_cloud']:
-            return QdrantClient(url=host, api_key=api_key), connection_params
+            print("Attempting cloud connection...")
+            client = QdrantClient(url=host, api_key=api_key)
+            print("Cloud connection successful")
+            return client, connection_params
         else:
-            return QdrantClient(host=host, port=port), connection_params
+            print("Attempting local connection...")
+            client = QdrantClient(host=host, port=port)
+            print("Local connection successful")
+            return client, connection_params
     except Exception as e:
+        print(f"Connection error: {str(e)}")
         raise Exception(f"Error connecting to Qdrant: {str(e)}")
 
 def load_data_into_vectorstore(
@@ -58,10 +71,14 @@ def load_data_into_vectorstore(
         connection_params (Dict): Connection parameters
     """
     try:
+        # Debug logging
+        print(f"Loading data with params: {connection_params}")
+        
         # Use OpenAI embeddings
         embeddings = OpenAIEmbeddings(openai_api_key=api_key)
         
         if connection_params['is_cloud']:
+            print("Using cloud configuration for loading data")
             Qdrant.from_texts(
                 texts=texts,
                 embedding=embeddings,
@@ -71,6 +88,7 @@ def load_data_into_vectorstore(
                 force_recreate=True
             )
         else:
+            print("Using local configuration for loading data")
             Qdrant.from_texts(
                 texts=texts,
                 embedding=embeddings,
@@ -80,6 +98,7 @@ def load_data_into_vectorstore(
                 force_recreate=True
             )
     except Exception as e:
+        print(f"Data loading error: {str(e)}")
         raise Exception(f"Error loading data into vector store: {str(e)}")
 
 def load_chain(client: QdrantClient, api_key: str,
