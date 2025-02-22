@@ -60,24 +60,23 @@ def load_data_into_vectorstore(
         # Use OpenAI embeddings
         embeddings = OpenAIEmbeddings(openai_api_key=api_key)
         
-        # Check if using cloud URL
-        if hasattr(client, '_client') and hasattr(client._client, 'url'):
-            # Cloud connection
+        # For cloud Qdrant
+        if isinstance(client, QdrantClient) and client.url:
             Qdrant.from_texts(
                 texts=texts,
                 embedding=embeddings,
-                url=client._client.url,
-                api_key=client._client.api_key,
+                url=client.url,
+                api_key=client.api_key,
                 collection_name=collection_name,
                 force_recreate=True
             )
+        # For local Qdrant
         else:
-            # Local connection
             Qdrant.from_texts(
                 texts=texts,
                 embedding=embeddings,
-                host=client._client.host,
-                port=client._client.port,
+                host="localhost",
+                port=6333,
                 collection_name=collection_name,
                 force_recreate=True
             )
