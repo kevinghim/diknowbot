@@ -189,7 +189,7 @@ if load_data_button:
         with st.spinner("Loading and processing documents..."):
             try:
                 # Initialize vector store
-                vector_store = connect_to_vectorstore(
+                vector_store, embeddings = connect_to_vectorstore(
                     host=qdrant_host,
                     port=qdrant_port,
                     api_key=qdrant_api_key,
@@ -240,7 +240,6 @@ if load_data_button:
                         except Exception as e:
                             st.sidebar.error(f"Error processing Word document {docx_file.name}: {str(e)}")
                 
-                # Process and load documents into vector store
                 if all_documents:
                     # Process documents into chunks
                     chunks = process_documents(all_documents)
@@ -259,6 +258,9 @@ if load_data_button:
                         }
                     )
                     
+                    # Store the client and embeddings in session state
+                    st.session_state['vector_store'] = vector_store
+                    st.session_state['embeddings'] = embeddings
                     st.session_state['documents_loaded'] = True
                     st.sidebar.success("✅ All documents loaded and processed successfully!")
                 else:
@@ -278,22 +280,20 @@ if load_data_button:
 # Chat interface
 if st.session_state['documents_loaded']:
     try:
-        # Initialize the chain
-        vector_store = connect_to_vectorstore(
-            host=qdrant_host,
-            port=qdrant_port,
-            api_key=qdrant_api_key,
+        # Create Qdrant wrapper for retriever
+        qdrant = Qdrant(
+            client=st.session_state['vector_store'],
             collection_name=collection_name,
-            openai_api_key=openai_api_key
+            embeddings=st.session_state['embeddings']
         )
         
-        retriever = vector_store.as_retriever(
+        retriever = qdrant.as_retriever(
             search_kwargs={"k": 3}
         )
         
         api_key = anthropic_api_key if model_provider == "Anthropic" else openai_api_key
         chain = load_chain(
-            vector_store,
+            qdrant,
             api_key,
             collection_name,
             model_provider.lower(),

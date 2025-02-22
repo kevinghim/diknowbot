@@ -16,7 +16,7 @@ def connect_to_vectorstore(
     api_key: Optional[str] = None,
     collection_name: str = "documents_collection",
     openai_api_key: Optional[str] = None
-) -> QdrantClient:
+) -> Tuple[QdrantClient, OpenAIEmbeddings]:
     """
     Connect to Qdrant vector store
     """
@@ -36,15 +36,6 @@ def connect_to_vectorstore(
                 timeout=60,
                 prefer_grpc=False
             )
-            
-            # Create Qdrant instance for retriever
-            qdrant = Qdrant(
-                client=client,
-                collection_name=collection_name,
-                embeddings=embeddings
-            )
-            
-            return qdrant
         else:
             # Local connection
             client = QdrantClient(
@@ -52,14 +43,16 @@ def connect_to_vectorstore(
                 port=port
             )
             
-            # Create Qdrant instance for retriever
-            qdrant = Qdrant(
-                client=client,
+        # Try to get or create collection
+        try:
+            client.get_collection(collection_name)
+        except Exception:
+            client.create_collection(
                 collection_name=collection_name,
-                embeddings=embeddings
+                vectors_config=VectorParams(size=1536, distance=Distance.COSINE)
             )
             
-            return qdrant
+        return client, embeddings
             
     except Exception as e:
         st.error(f"Connection error details: {str(e)}")
