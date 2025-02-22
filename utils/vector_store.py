@@ -23,6 +23,7 @@ def connect_to_vectorstore(
     try:
         # Debug logging
         st.write(f"Connecting to Qdrant at: {host}")
+        st.write(f"Debug - OpenAI key present: {bool(openai_api_key)}")
         
         # Initialize embeddings with OpenAI key
         embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
@@ -32,8 +33,8 @@ def connect_to_vectorstore(
             client = QdrantClient(
                 url=host,
                 api_key=api_key,
-                timeout=60,  # Increase timeout
-                prefer_grpc=False  # Force HTTP
+                timeout=60,
+                prefer_grpc=False
             )
             
             # Create Qdrant instance for retriever

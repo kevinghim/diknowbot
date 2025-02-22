@@ -193,7 +193,8 @@ if load_data_button:
                     host=qdrant_host,
                     port=qdrant_port,
                     api_key=qdrant_api_key,
-                    collection_name=collection_name
+                    collection_name=collection_name,
+                    openai_api_key=openai_api_key
                 )
                 
                 all_documents = []
