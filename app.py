@@ -186,6 +186,7 @@ if load_data_button:
                 vector_store = connect_to_vectorstore(
                     host=qdrant_host,
                     port=qdrant_port,
+                    api_key=qdrant_api_key,
                     collection_name=collection_name
                 )
                 
@@ -264,6 +265,7 @@ if st.session_state['documents_loaded']:
         vector_store = connect_to_vectorstore(
             host=qdrant_host,
             port=qdrant_port,
+            api_key=qdrant_api_key,
             collection_name=collection_name
         )
         
