@@ -292,21 +292,20 @@ if st.session_state['documents_loaded']:
         client = st.session_state['vector_store']
         embeddings = st.session_state['embeddings']
         
-        # Test search
-        query = "test query"
-        query_vector = embeddings.embed_query(query)
-        
-        results = client.search(
+        # Create Qdrant wrapper
+        vectorstore = Qdrant(
+            client=client,
             collection_name=collection_name,
-            query_vector=query_vector,
-            limit=1
+            embeddings=embeddings
         )
         
-        if not results:
+        # Test search with Document objects
+        docs = vectorstore.similarity_search("test", k=1)
+        if not docs:
             st.error("No documents found in search")
             st.stop()
             
-        st.write(f"Found document: {results[0].payload['text'][:100]}")
+        st.write(f"Found document: {docs[0].page_content[:100]}")
         
         # Create the chat model
         if model_provider == "Anthropic":
@@ -326,13 +325,6 @@ if st.session_state['documents_loaded']:
         memory = ConversationBufferMemory(
             memory_key="chat_history",
             return_messages=True
-        )
-        
-        # Create Qdrant wrapper
-        vectorstore = Qdrant(
-            client=client,
-            collection_name=collection_name,
-            embeddings=embeddings
         )
         
         qa_chain = ConversationalRetrievalChain.from_llm(

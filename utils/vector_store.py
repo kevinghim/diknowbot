@@ -70,21 +70,24 @@ def load_data_into_vectorstore(
         valid_texts = [text for text in texts if text and text.strip()]
         st.write(f"Debug - Processing {len(valid_texts)} valid texts")
         
-        # Create vectors
-        vectors = embeddings.embed_documents(valid_texts)
+        # Create Document objects
+        documents = [
+            Document(
+                page_content=text,
+                metadata={"source": f"doc_{i}"}
+            ) 
+            for i, text in enumerate(valid_texts)
+        ]
         
-        # Upload points
-        for text, vector in zip(valid_texts, vectors):
-            client.upsert(
-                collection_name=collection_name,
-                points=[
-                    rest.PointStruct(
-                        id=str(uuid4()),
-                        vector=vector,
-                        payload={"text": text, "metadata": {}}
-                    )
-                ]
-            )
+        # Create Qdrant wrapper
+        qdrant = Qdrant(
+            client=client,
+            collection_name=collection_name,
+            embeddings=embeddings
+        )
+        
+        # Add documents using Langchain's method
+        qdrant.add_documents(documents)
             
         st.success(f"Successfully loaded {len(valid_texts)} documents")
         
