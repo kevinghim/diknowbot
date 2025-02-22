@@ -41,29 +41,38 @@ def connect_to_vectorstore(
     except Exception as e:
         raise Exception(f"Error connecting to Qdrant: {str(e)}")
 
-def load_data_into_vectorstore(client: QdrantClient, docs: List[str], 
-                              openai_api_key: str, 
-                              collection_name: str = "documents_collection"):
+def load_data_into_vectorstore(
+    client: QdrantClient,
+    texts: List[str],
+    api_key: str,
+    collection_name: str = "documents_collection"
+) -> None:
     """
-    Load documents into vector store
+    Load text chunks into Qdrant vector store
     
     Args:
         client (QdrantClient): Qdrant client
-        docs (List[str]): List of document chunks
-        openai_api_key (str): OpenAI API key
-        collection_name (str): Collection name
-        
-    Returns:
-        list: List of document IDs
+        texts (List[str]): List of text chunks to load
+        api_key (str): OpenAI API key for embeddings
+        collection_name (str): Name of the collection
     """
-    embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-    qdrant_client = Qdrant(
-        client=client, 
-        collection_name=collection_name, 
-        embeddings=embeddings
-    )
-    ids = qdrant_client.add_texts(docs)
-    return ids
+    try:
+        # Use OpenAI embeddings
+        embeddings = OpenAIEmbeddings(openai_api_key=api_key)
+        
+        # Create new vectorstore from texts
+        Qdrant.from_texts(
+            texts=texts,
+            embedding=embeddings,
+            url=client.url if hasattr(client, 'url') else None,  # For cloud connection
+            host=None if hasattr(client, 'url') else client._client.host,  # For local connection
+            port=client._client.port,
+            api_key=client._client.api_key,  # Pass through the API key
+            collection_name=collection_name,
+            force_recreate=True
+        )
+    except Exception as e:
+        raise Exception(f"Error loading data into vector store: {str(e)}")
 
 def load_chain(client: QdrantClient, api_key: str,
                collection_name: str = "documents_collection",
