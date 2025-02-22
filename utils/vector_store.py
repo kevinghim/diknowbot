@@ -14,7 +14,8 @@ def connect_to_vectorstore(
     host: str,
     port: Optional[int] = None,
     api_key: Optional[str] = None,
-    collection_name: str = "documents_collection"
+    collection_name: str = "documents_collection",
+    openai_api_key: Optional[str] = None
 ) -> QdrantClient:
     """
     Connect to Qdrant vector store
@@ -22,6 +23,9 @@ def connect_to_vectorstore(
     try:
         # Debug logging
         st.write(f"Connecting to Qdrant at: {host}")
+        
+        # Initialize embeddings with OpenAI key
+        embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
         
         if host.startswith('http'):
             # Cloud connection
@@ -36,7 +40,7 @@ def connect_to_vectorstore(
             qdrant = Qdrant(
                 client=client,
                 collection_name=collection_name,
-                embeddings=OpenAIEmbeddings()  # We'll configure this later with the OpenAI key
+                embeddings=embeddings
             )
             
             return qdrant
@@ -51,7 +55,7 @@ def connect_to_vectorstore(
             qdrant = Qdrant(
                 client=client,
                 collection_name=collection_name,
-                embeddings=OpenAIEmbeddings()  # We'll configure this later with the OpenAI key
+                embeddings=embeddings
             )
             
             return qdrant

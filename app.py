@@ -282,7 +282,8 @@ if st.session_state['documents_loaded']:
             host=qdrant_host,
             port=qdrant_port,
             api_key=qdrant_api_key,
-            collection_name=collection_name
+            collection_name=collection_name,
+            openai_api_key=openai_api_key
         )
         
         retriever = vector_store.as_retriever(
