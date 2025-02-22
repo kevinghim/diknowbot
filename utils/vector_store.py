@@ -1,14 +1,14 @@
 from typing import List, Optional, Tuple, Dict
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chat_models import ChatAnthropic
 from langchain.chains import ConversationalRetrievalChain
-from langchain.vectorstores.qdrant import Qdrant
+from langchain_community.vectorstores import Qdrant
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as rest
 from qdrant_client.http.models import Distance, VectorParams
 import streamlit as st
 from uuid import uuid4
+from langchain.embeddings.openai import OpenAIEmbeddings
 
 def connect_to_vectorstore(
     host: str,

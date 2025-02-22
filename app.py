@@ -3,6 +3,11 @@ from streamlit_chat import message
 import os
 import tempfile
 from typing import List, Dict, Any, Optional
+from langchain_community.vectorstores import Qdrant
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.chat_models import ChatOpenAI
+from langchain.memory import ConversationBufferMemory
+from langchain.chains import ConversationalRetrievalChain
 
 # Import custom modules
 from loaders.notion_loader import NotionLoader
@@ -14,6 +19,8 @@ from utils.vector_store import (
     load_data_into_vectorstore,
     load_chain
 )
+from utils.document_processing import process_file, cleanup_temp_files
+from utils.notion_integration import get_notion_pages
 
 # Set page config
 st.set_page_config(
