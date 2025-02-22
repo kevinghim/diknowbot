@@ -334,15 +334,18 @@ if st.session_state['documents_loaded']:
         )
         
         # Chat interface
+        if 'submit_pressed' not in st.session_state:
+            st.session_state.submit_pressed = False
+            
         user_input = st.text_input("Ask a question about your documents:", key="input")
         
-        if user_input:
+        if user_input and not st.session_state.submit_pressed:
+            st.session_state.submit_pressed = True
             with st.spinner("Thinking..."):
                 try:
                     result = qa_chain({"question": user_input})
                     st.session_state['past'].append(user_input)
                     st.session_state['generated'].append(result['answer'])
-                    st.rerun()
                 except Exception as e:
                     st.error(str(e))
         
@@ -351,6 +354,10 @@ if st.session_state['documents_loaded']:
             for i in range(len(st.session_state['generated']) - 1, -1, -1):
                 message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
                 message(st.session_state["generated"][i], key=str(i))
+                
+        # Reset submit flag
+        if st.session_state.submit_pressed:
+            st.session_state.submit_pressed = False
                 
     except Exception as e:
         st.error(str(e))
