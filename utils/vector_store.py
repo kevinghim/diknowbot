@@ -60,17 +60,27 @@ def load_data_into_vectorstore(
         # Use OpenAI embeddings
         embeddings = OpenAIEmbeddings(openai_api_key=api_key)
         
-        # Create new vectorstore from texts
-        Qdrant.from_texts(
-            texts=texts,
-            embedding=embeddings,
-            url=client.url if hasattr(client, 'url') else None,  # For cloud connection
-            host=None if hasattr(client, 'url') else client._client.host,  # For local connection
-            port=client._client.port,
-            api_key=client._client.api_key,  # Pass through the API key
-            collection_name=collection_name,
-            force_recreate=True
-        )
+        # Check if using cloud URL
+        if hasattr(client, '_client') and hasattr(client._client, 'url'):
+            # Cloud connection
+            Qdrant.from_texts(
+                texts=texts,
+                embedding=embeddings,
+                url=client._client.url,
+                api_key=client._client.api_key,
+                collection_name=collection_name,
+                force_recreate=True
+            )
+        else:
+            # Local connection
+            Qdrant.from_texts(
+                texts=texts,
+                embedding=embeddings,
+                host=client._client.host,
+                port=client._client.port,
+                collection_name=collection_name,
+                force_recreate=True
+            )
     except Exception as e:
         raise Exception(f"Error loading data into vector store: {str(e)}")
 
