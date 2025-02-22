@@ -53,7 +53,7 @@ def connect_to_vectorstore(
         return client, embeddings
             
     except Exception as e:
-        st.error(f"Connection error: {str(e)}")
+        st.error(str(e))
         raise
 
 def load_data_into_vectorstore(
@@ -66,36 +66,30 @@ def load_data_into_vectorstore(
     try:
         embeddings = OpenAIEmbeddings(openai_api_key=api_key)
         
+        # Filter and prepare texts
+        valid_texts = [text for text in texts if text and text.strip()]
+        st.write(f"Debug - Processing {len(valid_texts)} valid texts")
+        
         # Create vectors
-        vectors = embeddings.embed_documents(texts)
+        vectors = embeddings.embed_documents(valid_texts)
         
         # Upload points
-        points = []
-        for i, (text, vector) in enumerate(zip(texts, vectors)):
-            if text and text.strip():
-                points.append(
+        for text, vector in zip(valid_texts, vectors):
+            client.upsert(
+                collection_name=collection_name,
+                points=[
                     rest.PointStruct(
                         id=str(uuid4()),
                         vector=vector,
-                        payload={"text": text}
+                        payload={"text": text, "metadata": {}}
                     )
-                )
-        
-        st.write(f"Debug - Uploading {len(points)} points")
-        
-        # Upload in batches
-        batch_size = 100
-        for i in range(0, len(points), batch_size):
-            batch = points[i:i + batch_size]
-            client.upsert(
-                collection_name=collection_name,
-                points=batch
+                ]
             )
             
-        st.success(f"Successfully loaded {len(points)} points")
+        st.success(f"Successfully loaded {len(valid_texts)} documents")
         
     except Exception as e:
-        st.error(f"Data loading error: {str(e)}")
+        st.error(str(e))
         raise
 
 def load_chain(client: QdrantClient, api_key: str,

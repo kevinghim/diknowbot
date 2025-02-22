@@ -292,27 +292,21 @@ if st.session_state['documents_loaded']:
         client = st.session_state['vector_store']
         embeddings = st.session_state['embeddings']
         
-        # Test retrieval
-        query_vector = embeddings.embed_query("test")
-        search_result = client.search(
+        # Test search
+        query = "test query"
+        query_vector = embeddings.embed_query(query)
+        
+        results = client.search(
             collection_name=collection_name,
             query_vector=query_vector,
             limit=1
         )
         
-        if search_result:
-            st.write(f"Found document: {search_result[0].payload['text'][:100]}")
+        if not results:
+            st.error("No documents found in search")
+            st.stop()
             
-            # Create retriever
-            vectorstore = Qdrant(
-                client=client,
-                collection_name=collection_name,
-                embeddings=embeddings
-            )
-            
-            retriever = vectorstore.as_retriever(
-                search_kwargs={"k": 3}
-            )
+        st.write(f"Found document: {results[0].payload['text'][:100]}")
         
         # Create the chat model
         if model_provider == "Anthropic":
@@ -328,38 +322,37 @@ if st.session_state['documents_loaded']:
                 temperature=0.7
             )
         
-        # Create the chain with a custom retriever
+        # Create the conversation chain
         memory = ConversationBufferMemory(
             memory_key="chat_history",
             return_messages=True
         )
         
-        qa_chain = ConversationalRetrievalChain.from_llm(
-            llm=llm,
-            retriever=retriever,
-            memory=memory,
-            return_source_documents=True,
-            verbose=True
+        # Create Qdrant wrapper
+        vectorstore = Qdrant(
+            client=client,
+            collection_name=collection_name,
+            embeddings=embeddings
         )
         
-        # Chat input
+        qa_chain = ConversationalRetrievalChain.from_llm(
+            llm=llm,
+            retriever=vectorstore.as_retriever(search_kwargs={"k": 3}),
+            memory=memory
+        )
+        
+        # Chat interface
         user_input = st.text_input("Ask a question about your documents:", key="input")
         
         if user_input:
             with st.spinner("Thinking..."):
                 try:
-                    # Test retrieval before chain
-                    docs = retriever.get_relevant_documents(user_input)
-                    st.write(f"Debug - Found {len(docs)} relevant documents")
-                    st.write(f"Debug - First doc: {docs[0].page_content[:100] if docs else 'None'}")
-                    
                     result = qa_chain({"question": user_input})
                     st.session_state['past'].append(user_input)
                     st.session_state['generated'].append(result['answer'])
                     st.experimental_rerun()
                 except Exception as e:
-                    st.error(f"Error: {str(e)}")
-                    st.error("Full error:", exc_info=True)
+                    st.error(str(e))
         
         # Display chat history
         if st.session_state['generated']:
@@ -368,8 +361,7 @@ if st.session_state['documents_loaded']:
                 message(st.session_state["generated"][i], key=str(i))
                 
     except Exception as e:
-        st.error(f"Error initializing chat interface: {str(e)}")
-        st.error("Full error:", exc_info=True)
+        st.error(str(e))
 else:
     st.info("👆 Please load your documents using the sidebar to start chatting!")
 
