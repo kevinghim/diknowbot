@@ -289,20 +289,30 @@ if load_data_button:
 # Chat interface
 if st.session_state['documents_loaded']:
     try:
-        embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-        vectorstore = Qdrant(
-            client=st.session_state['vector_store'],
+        client = st.session_state['vector_store']
+        embeddings = st.session_state['embeddings']
+        
+        # Test retrieval
+        query_vector = embeddings.embed_query("test")
+        search_result = client.search(
             collection_name=collection_name,
-            embeddings=embeddings
+            query_vector=query_vector,
+            limit=1
         )
         
-        # Test simple search
-        st.write("Testing search...")
-        results = vectorstore.similarity_search_with_score("test")
-        st.write(f"Found {len(results)} results")
-        if results:
-            doc, score = results[0]
-            st.write(f"First result: {doc.page_content[:100]}")
+        if search_result:
+            st.write(f"Found document: {search_result[0].payload['text'][:100]}")
+            
+            # Create retriever
+            vectorstore = Qdrant(
+                client=client,
+                collection_name=collection_name,
+                embeddings=embeddings
+            )
+            
+            retriever = vectorstore.as_retriever(
+                search_kwargs={"k": 3}
+            )
         
         # Create the chat model
         if model_provider == "Anthropic":
@@ -322,12 +332,6 @@ if st.session_state['documents_loaded']:
         memory = ConversationBufferMemory(
             memory_key="chat_history",
             return_messages=True
-        )
-        
-        retriever = vectorstore.as_retriever(
-            search_type="similarity",
-            search_kwargs={"k": 3},
-            return_source_documents=True
         )
         
         qa_chain = ConversationalRetrievalChain.from_llm(

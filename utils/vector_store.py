@@ -21,15 +21,12 @@ def connect_to_vectorstore(
     Connect to Qdrant vector store
     """
     try:
-        # Debug logging
         st.write(f"Connecting to Qdrant at: {host}")
-        st.write(f"Debug - OpenAI key present: {bool(openai_api_key)}")
         
-        # Initialize embeddings with OpenAI key
+        # Initialize embeddings
         embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
         
         if host.startswith('http'):
-            # Cloud connection
             client = QdrantClient(
                 url=host,
                 api_key=api_key,
@@ -37,26 +34,27 @@ def connect_to_vectorstore(
                 prefer_grpc=False
             )
         else:
-            # Local connection
             client = QdrantClient(
                 host=host,
                 port=port
             )
             
-        # Try to get or create collection
+        # Recreate collection
         try:
-            client.get_collection(collection_name)
+            client.delete_collection(collection_name)
         except Exception:
-            client.create_collection(
-                collection_name=collection_name,
-                vectors_config=VectorParams(size=1536, distance=Distance.COSINE)
-            )
+            pass
+            
+        client.create_collection(
+            collection_name=collection_name,
+            vectors_config=VectorParams(size=1536, distance=Distance.COSINE)
+        )
             
         return client, embeddings
             
     except Exception as e:
-        st.error(f"Connection error details: {str(e)}")
-        raise Exception(f"Failed to connect to Qdrant: {str(e)}")
+        st.error(f"Connection error: {str(e)}")
+        raise
 
 def load_data_into_vectorstore(
     client: QdrantClient,
@@ -68,25 +66,33 @@ def load_data_into_vectorstore(
     try:
         embeddings = OpenAIEmbeddings(openai_api_key=api_key)
         
-        # Convert texts to Documents
-        documents = [
-            Document(page_content=text, metadata={"source": f"chunk_{i}"})
-            for i, text in enumerate(texts)
-            if text and text.strip()
-        ]
+        # Create vectors
+        vectors = embeddings.embed_documents(texts)
         
-        st.write(f"Debug - Created {len(documents)} documents")
+        # Upload points
+        points = []
+        for i, (text, vector) in enumerate(zip(texts, vectors)):
+            if text and text.strip():
+                points.append(
+                    rest.PointStruct(
+                        id=str(uuid4()),
+                        vector=vector,
+                        payload={"text": text}
+                    )
+                )
         
-        # Create Qdrant wrapper
-        qdrant = Qdrant(
-            client=client,
-            collection_name=collection_name,
-            embeddings=embeddings
-        )
+        st.write(f"Debug - Uploading {len(points)} points")
         
-        # Add documents
-        qdrant.add_documents(documents)
-        st.success(f"Successfully loaded {len(documents)} documents")
+        # Upload in batches
+        batch_size = 100
+        for i in range(0, len(points), batch_size):
+            batch = points[i:i + batch_size]
+            client.upsert(
+                collection_name=collection_name,
+                points=batch
+            )
+            
+        st.success(f"Successfully loaded {len(points)} points")
         
     except Exception as e:
         st.error(f"Data loading error: {str(e)}")
