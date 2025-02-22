@@ -246,28 +246,32 @@ if load_data_button:
                             st.sidebar.error(f"Error processing Word document {docx_file.name}: {str(e)}")
                 
                 if all_documents:
-                    # Process documents into chunks
-                    chunks = process_documents(all_documents)
-                    
-                    # Load chunks into vector store
-                    load_data_into_vectorstore(
-                        vector_store,
-                        chunks,
-                        openai_api_key,
-                        collection_name,
-                        {
-                            'is_cloud': is_deployed,
-                            'host': qdrant_host,
-                            'port': qdrant_port,
-                            'api_key': qdrant_api_key
-                        }
-                    )
-                    
-                    # Store the client and embeddings in session state
-                    st.session_state['vector_store'] = vector_store
-                    st.session_state['embeddings'] = embeddings
-                    st.session_state['documents_loaded'] = True
-                    st.sidebar.success("✅ All documents loaded and processed successfully!")
+                    try:
+                        # Process documents into chunks
+                        chunks = process_documents(all_documents)
+                        st.write(f"Debug - Created {len(chunks)} text chunks")
+                        
+                        # Load chunks into vector store
+                        load_data_into_vectorstore(
+                            vector_store,
+                            chunks,
+                            openai_api_key,
+                            collection_name,
+                            {
+                                'is_cloud': is_deployed,
+                                'host': qdrant_host,
+                                'port': qdrant_port,
+                                'api_key': qdrant_api_key
+                            }
+                        )
+                        
+                        # Store the client and embeddings in session state
+                        st.session_state['vector_store'] = vector_store
+                        st.session_state['embeddings'] = embeddings
+                        st.session_state['documents_loaded'] = True
+                        st.sidebar.success("✅ All documents loaded and processed successfully!")
+                    except Exception as e:
+                        st.error(f"Error processing documents: {str(e)}")
                 else:
                     st.sidebar.warning("No documents were loaded. Please upload documents or enable Notion integration.")
                 
