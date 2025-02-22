@@ -186,7 +186,6 @@ if load_data_button:
                 vector_store = connect_to_vectorstore(
                     host=qdrant_host,
                     port=qdrant_port,
-                    api_key=qdrant_api_key,
                     collection_name=collection_name
                 )
                 
@@ -265,7 +264,6 @@ if st.session_state['documents_loaded']:
         vector_store = connect_to_vectorstore(
             host=qdrant_host,
             port=qdrant_port,
-            api_key=qdrant_api_key,
             collection_name=collection_name
         )
         
@@ -278,9 +276,9 @@ if st.session_state['documents_loaded']:
             model_name
         )
         
-        # Display chat history (oldest at top, newest just above input)
+        # Display chat history (newest first, growing upward)
         if st.session_state['generated']:
-            for i in range(len(st.session_state['generated'])):
+            for i in range(len(st.session_state['generated']) - 1, -1, -1):
                 message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
                 message(st.session_state["generated"][i][1], key=str(i))
         
