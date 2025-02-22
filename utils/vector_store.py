@@ -60,13 +60,16 @@ def load_data_into_vectorstore(
         # Use OpenAI embeddings
         embeddings = OpenAIEmbeddings(openai_api_key=api_key)
         
+        # Get client configuration
+        client_config = client.config
+        
         # For cloud Qdrant
-        if isinstance(client, QdrantClient) and client.url:
+        if hasattr(client_config, 'uri'):
             Qdrant.from_texts(
                 texts=texts,
                 embedding=embeddings,
-                url=client.url,
-                api_key=client.api_key,
+                url=client_config.uri,
+                api_key=client_config.api_key,
                 collection_name=collection_name,
                 force_recreate=True
             )
@@ -75,8 +78,8 @@ def load_data_into_vectorstore(
             Qdrant.from_texts(
                 texts=texts,
                 embedding=embeddings,
-                host="localhost",
-                port=6333,
+                host=client_config.host,
+                port=client_config.port,
                 collection_name=collection_name,
                 force_recreate=True
             )
