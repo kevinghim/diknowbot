@@ -285,24 +285,27 @@ if load_data_button:
 # Chat interface
 if st.session_state['documents_loaded']:
     try:
+        # Get the QdrantClient from the stored vector_store
+        client = st.session_state['vector_store']
+        
         # Create Qdrant wrapper for retriever
         qdrant = Qdrant(
-            client=st.session_state['vector_store'],
+            client=client,
             collection_name=collection_name,
             embeddings=st.session_state['embeddings']
         )
         
-        retriever = qdrant.as_retriever(
-            search_kwargs={"k": 3}
-        )
-        
         api_key = anthropic_api_key if model_provider == "Anthropic" else openai_api_key
         chain = load_chain(
-            qdrant,
+            client,  # Pass the client directly
             api_key,
             collection_name,
             model_provider.lower(),
             model_name
+        )
+        
+        retriever = qdrant.as_retriever(
+            search_kwargs={"k": 3}
         )
         
         # Display chat history (newest first, growing upward)
