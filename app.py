@@ -289,73 +289,61 @@ if load_data_button:
 # Chat interface
 if st.session_state['documents_loaded']:
     try:
-        # Get the QdrantClient from the stored vector_store
-        client = st.session_state['vector_store']
-        embeddings = st.session_state['embeddings']
-        
-        # Create Qdrant wrapper for retriever
-        qdrant = Qdrant(
-            client=client,
+        # Get the QdrantClient and create a fresh Qdrant instance
+        embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
+        vectorstore = Qdrant(
+            client=st.session_state['vector_store'],
             collection_name=collection_name,
             embeddings=embeddings
         )
         
-        # Create the retriever
-        retriever = qdrant.as_retriever(
-            search_kwargs={"k": 3}
-        )
-        
         # Create the chat model
         if model_provider == "Anthropic":
-            chat_model = ChatAnthropic(
+            llm = ChatAnthropic(
                 model=model_name,
                 anthropic_api_key=anthropic_api_key,
                 temperature=0.7
             )
         else:
-            chat_model = ChatOpenAI(
+            llm = ChatOpenAI(
                 model=model_name,
                 openai_api_key=openai_api_key,
                 temperature=0.7
             )
         
-        # Create the conversation chain
+        # Create a simple chain
         memory = ConversationBufferMemory(
             memory_key="chat_history",
             return_messages=True
         )
         
-        chain = ConversationalRetrievalChain.from_llm(
-            llm=chat_model,
-            retriever=retriever,
+        qa_chain = ConversationalRetrievalChain.from_llm(
+            llm=llm,
+            retriever=vectorstore.as_retriever(search_kwargs={"k": 3}),
             memory=memory,
-            return_source_documents=True
+            return_source_documents=True,
+            verbose=True
         )
+        
+        # Chat input
+        user_input = st.text_input("Ask a question about your documents:", key="input")
+        
+        if user_input:
+            with st.spinner("Thinking..."):
+                try:
+                    result = qa_chain({"question": user_input})
+                    st.session_state['past'].append(user_input)
+                    st.session_state['generated'].append(result['answer'])
+                    st.experimental_rerun()
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
         
         # Display chat history
         if st.session_state['generated']:
             for i in range(len(st.session_state['generated']) - 1, -1, -1):
                 message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
                 message(st.session_state["generated"][i], key=str(i))
-        
-        # Chat input
-        user_input = st.text_input("Ask a question about your documents:", key="input")
-        
-        if user_input:
-            try:
-                # Get response from chain
-                response = chain({"question": user_input})
                 
-                # Update chat history
-                st.session_state['past'].append(user_input)
-                st.session_state['generated'].append(response['answer'])
-                
-                # Force a rerun to update the chat display
-                st.experimental_rerun()
-                
-            except Exception as e:
-                st.error(f"Error generating response: {str(e)}")
-        
     except Exception as e:
         st.error(f"Error initializing chat interface: {str(e)}")
 else:
