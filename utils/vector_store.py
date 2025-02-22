@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.chat_models import ChatOpenAI
 from langchain.chat_models import ChatAnthropic
@@ -12,7 +12,7 @@ def connect_to_vectorstore(
     port: Optional[int] = None,
     api_key: Optional[str] = None,
     collection_name: str = "documents_collection"
-) -> QdrantClient:
+) -> Tuple[QdrantClient, bool]:
     """
     Connect to Qdrant vector store
     
@@ -23,21 +23,15 @@ def connect_to_vectorstore(
         collection_name (str): Name of the collection
         
     Returns:
-        QdrantClient: Configured Qdrant client
+        Tuple[QdrantClient, bool]: Configured Qdrant client and is_cloud flag
     """
     try:
         if host.startswith('http'):
             # Cloud connection
-            return QdrantClient(
-                url=host,
-                api_key=api_key
-            )
+            return QdrantClient(url=host, api_key=api_key), True
         else:
             # Local connection
-            return QdrantClient(
-                host=host,
-                port=port
-            )
+            return QdrantClient(host=host, port=port), False
     except Exception as e:
         raise Exception(f"Error connecting to Qdrant: {str(e)}")
 
@@ -45,7 +39,8 @@ def load_data_into_vectorstore(
     client: QdrantClient,
     texts: List[str],
     api_key: str,
-    collection_name: str = "documents_collection"
+    collection_name: str = "documents_collection",
+    is_cloud: bool = False
 ) -> None:
     """
     Load text chunks into Qdrant vector store
@@ -55,31 +50,27 @@ def load_data_into_vectorstore(
         texts (List[str]): List of text chunks to load
         api_key (str): OpenAI API key for embeddings
         collection_name (str): Name of the collection
+        is_cloud (bool): Whether using cloud Qdrant
     """
     try:
         # Use OpenAI embeddings
         embeddings = OpenAIEmbeddings(openai_api_key=api_key)
         
-        # Get client configuration
-        client_config = client.config
-        
-        # For cloud Qdrant
-        if hasattr(client_config, 'uri'):
+        if is_cloud:
             Qdrant.from_texts(
                 texts=texts,
                 embedding=embeddings,
-                url=client_config.uri,
-                api_key=client_config.api_key,
+                url="https://6037f3a0-f569-4322-bbfa-179e30253d9d.us-east4-0.gcp.cloud.qdrant.io",
+                api_key="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.40v8NLDkLdBIKpVjWJuU3ByUr8uVCZ5lpdVcm7q6I3A",
                 collection_name=collection_name,
                 force_recreate=True
             )
-        # For local Qdrant
         else:
             Qdrant.from_texts(
                 texts=texts,
                 embedding=embeddings,
-                host=client_config.host,
-                port=client_config.port,
+                host="localhost",
+                port=6333,
                 collection_name=collection_name,
                 force_recreate=True
             )

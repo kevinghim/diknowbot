@@ -188,7 +188,7 @@ if load_data_button:
         with st.spinner("Loading and processing documents..."):
             try:
                 # Initialize vector store
-                vector_store = connect_to_vectorstore(
+                vector_store, is_cloud = connect_to_vectorstore(
                     host=qdrant_host,
                     port=qdrant_port,
                     api_key=qdrant_api_key,
@@ -248,7 +248,8 @@ if load_data_button:
                         vector_store,
                         chunks,
                         openai_api_key,
-                        collection_name
+                        collection_name,
+                        is_cloud
                     )
                     
                     st.session_state['documents_loaded'] = True
