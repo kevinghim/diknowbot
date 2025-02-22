@@ -297,6 +297,11 @@ if st.session_state['documents_loaded']:
             embeddings=embeddings
         )
         
+        # Test retrieval directly
+        st.write("Debug - Testing retrieval...")
+        test_results = vectorstore.similarity_search("test", k=1)
+        st.write(f"Debug - Retrieved document: {test_results[0].page_content[:100] if test_results else 'None'}")
+        
         # Create the chat model
         if model_provider == "Anthropic":
             llm = ChatAnthropic(
@@ -311,15 +316,21 @@ if st.session_state['documents_loaded']:
                 temperature=0.7
             )
         
-        # Create a simple chain
+        # Create the chain with a custom retriever
         memory = ConversationBufferMemory(
             memory_key="chat_history",
             return_messages=True
         )
         
+        retriever = vectorstore.as_retriever(
+            search_type="similarity",
+            search_kwargs={"k": 3},
+            return_source_documents=True
+        )
+        
         qa_chain = ConversationalRetrievalChain.from_llm(
             llm=llm,
-            retriever=vectorstore.as_retriever(search_kwargs={"k": 3}),
+            retriever=retriever,
             memory=memory,
             return_source_documents=True,
             verbose=True
@@ -331,12 +342,18 @@ if st.session_state['documents_loaded']:
         if user_input:
             with st.spinner("Thinking..."):
                 try:
+                    # Test retrieval before chain
+                    docs = retriever.get_relevant_documents(user_input)
+                    st.write(f"Debug - Found {len(docs)} relevant documents")
+                    st.write(f"Debug - First doc: {docs[0].page_content[:100] if docs else 'None'}")
+                    
                     result = qa_chain({"question": user_input})
                     st.session_state['past'].append(user_input)
                     st.session_state['generated'].append(result['answer'])
                     st.experimental_rerun()
                 except Exception as e:
                     st.error(f"Error: {str(e)}")
+                    st.error("Full error:", exc_info=True)
         
         # Display chat history
         if st.session_state['generated']:
@@ -346,6 +363,7 @@ if st.session_state['documents_loaded']:
                 
     except Exception as e:
         st.error(f"Error initializing chat interface: {str(e)}")
+        st.error("Full error:", exc_info=True)
 else:
     st.info("👆 Please load your documents using the sidebar to start chatting!")
 
