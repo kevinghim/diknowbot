@@ -268,7 +268,16 @@ if st.session_state['documents_loaded']:
             model_name
         )
         
-        # Chat interface using form
+        # Display chat history (newest first, growing upward)
+        if st.session_state['generated']:
+            for i in range(len(st.session_state['generated']) - 1, -1, -1):
+                message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
+                message(st.session_state["generated"][i][1], key=str(i))
+        
+        # Empty space to push input to bottom
+        st.empty()
+        
+        # Chat input form at bottom
         with st.form(key="chat_form", clear_on_submit=True):
             col1, col2 = st.columns([0.85, 0.15])
             with col1:
@@ -296,12 +305,6 @@ if st.session_state['documents_loaded']:
                     
                 except Exception as e:
                     st.error(f"Error generating response: {str(e)}")
-
-        # Display chat history (oldest first)
-        if st.session_state['generated']:
-            for i in range(len(st.session_state['generated'])):
-                message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
-                message(st.session_state["generated"][i][1], key=str(i))
                 
     except Exception as e:
         st.error(f"Error initializing chat interface: {str(e)}")
