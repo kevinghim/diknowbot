@@ -5,7 +5,7 @@ import tempfile
 from typing import List, Dict, Any, Optional
 from langchain_community.vectorstores import Qdrant
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.chat_models import ChatOpenAI
+from langchain.chat_models import ChatOpenAI, ChatAnthropic
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 
@@ -291,65 +291,71 @@ if st.session_state['documents_loaded']:
     try:
         # Get the QdrantClient from the stored vector_store
         client = st.session_state['vector_store']
+        embeddings = st.session_state['embeddings']
         
         # Create Qdrant wrapper for retriever
         qdrant = Qdrant(
             client=client,
             collection_name=collection_name,
-            embeddings=st.session_state['embeddings']
+            embeddings=embeddings
         )
         
-        api_key = anthropic_api_key if model_provider == "Anthropic" else openai_api_key
-        chain = load_chain(
-            client,  # Pass the client directly
-            api_key,
-            collection_name,
-            model_provider.lower(),
-            model_name
-        )
-        
+        # Create the retriever
         retriever = qdrant.as_retriever(
             search_kwargs={"k": 3}
         )
         
-        # Display chat history (newest first, growing upward)
+        # Create the chat model
+        if model_provider == "Anthropic":
+            chat_model = ChatAnthropic(
+                model=model_name,
+                anthropic_api_key=anthropic_api_key,
+                temperature=0.7
+            )
+        else:
+            chat_model = ChatOpenAI(
+                model=model_name,
+                openai_api_key=openai_api_key,
+                temperature=0.7
+            )
+        
+        # Create the conversation chain
+        memory = ConversationBufferMemory(
+            memory_key="chat_history",
+            return_messages=True
+        )
+        
+        chain = ConversationalRetrievalChain.from_llm(
+            llm=chat_model,
+            retriever=retriever,
+            memory=memory,
+            return_source_documents=True
+        )
+        
+        # Display chat history
         if st.session_state['generated']:
             for i in range(len(st.session_state['generated']) - 1, -1, -1):
                 message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
-                message(st.session_state["generated"][i][1], key=str(i))
+                message(st.session_state["generated"][i], key=str(i))
         
-        # Empty space to push input to bottom
-        st.empty()
+        # Chat input
+        user_input = st.text_input("Ask a question about your documents:", key="input")
         
-        # Chat input form at bottom
-        with st.form(key="chat_form", clear_on_submit=True):
-            col1, col2 = st.columns([0.85, 0.15])
-            with col1:
-                user_input = st.text_area(
-                    "Ask a question about your documents:",
-                    height=None,
-                    key="input_area"
-                )
-            with col2:
-                submit_button = st.form_submit_button("↑")
-
-            if submit_button and user_input:
-                try:
-                    question = user_input.strip()
-                    # Get response from chain
-                    result = chain({
-                        "question": question, 
-                        "chat_history": st.session_state["generated"]
-                    })
-                    response = result['answer']
-                    
-                    # Update chat history
-                    st.session_state['past'].append(question)
-                    st.session_state['generated'].append((question, response))
-                    
-                except Exception as e:
-                    st.error(f"Error generating response: {str(e)}")
+        if user_input:
+            try:
+                # Get response from chain
+                response = chain({"question": user_input})
                 
+                # Update chat history
+                st.session_state['past'].append(user_input)
+                st.session_state['generated'].append(response['answer'])
+                
+                # Force a rerun to update the chat display
+                st.experimental_rerun()
+                
+            except Exception as e:
+                st.error(f"Error generating response: {str(e)}")
+        
     except Exception as e:
         st.error(f"Error initializing chat interface: {str(e)}")
 else:
