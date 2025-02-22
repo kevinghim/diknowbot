@@ -7,28 +7,39 @@ from langchain.vectorstores.qdrant import Qdrant
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 
-def connect_to_vectorstore(host: str = "localhost", port: int = 6333, 
-                           collection_name: str = "documents_collection"):
+def connect_to_vectorstore(
+    host: str,
+    port: Optional[int] = None,
+    api_key: Optional[str] = None,
+    collection_name: str = "documents_collection"
+) -> QdrantClient:
     """
     Connect to Qdrant vector store
     
     Args:
-        host (str): Qdrant host
-        port (int): Qdrant port
+        host (str): Qdrant host address
+        port (Optional[int]): Port number for local connection
+        api_key (Optional[str]): API key for cloud connection
         collection_name (str): Name of the collection
         
     Returns:
-        QdrantClient: Initialized Qdrant client
+        QdrantClient: Configured Qdrant client
     """
-    client = QdrantClient(host=host, port=port)
     try:
-        client.get_collection(collection_name)
+        if host.startswith('http'):
+            # Cloud connection
+            return QdrantClient(
+                url=host,
+                api_key=api_key
+            )
+        else:
+            # Local connection
+            return QdrantClient(
+                host=host,
+                port=port
+            )
     except Exception as e:
-        client.recreate_collection(
-            collection_name=collection_name,
-            vectors_config=models.VectorParams(size=1536, distance=models.Distance.COSINE),
-        )
-    return client
+        raise Exception(f"Error connecting to Qdrant: {str(e)}")
 
 def load_data_into_vectorstore(client: QdrantClient, docs: List[str], 
                               openai_api_key: str, 
