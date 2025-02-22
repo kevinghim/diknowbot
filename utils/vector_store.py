@@ -71,23 +71,20 @@ def load_data_into_vectorstore(
         # Use OpenAI embeddings
         embeddings = OpenAIEmbeddings(openai_api_key=api_key)
         
-        # Create vectors
-        vectors = embeddings.embed_documents(texts)
-        
         # Debug info
         st.write(f"Debug - Loading {len(texts)} documents into collection: {collection_name}")
         
-        # Generate UUIDs for points
-        point_ids = [str(uuid4()) for _ in range(len(texts))]
-        
-        # Upload directly using client
-        client.upsert(
+        # Create Qdrant wrapper
+        qdrant = Qdrant(
+            client=client,
             collection_name=collection_name,
-            points=rest.Batch(
-                ids=point_ids,
-                vectors=vectors,
-                payloads=[{"text": text} for text in texts]
-            )
+            embeddings=embeddings
+        )
+        
+        # Load texts directly using Qdrant's from_texts method
+        qdrant.add_texts(
+            texts=texts,
+            ids=[str(uuid4()) for _ in range(len(texts))]
         )
         
         st.success(f"Successfully loaded {len(texts)} documents into Qdrant")
