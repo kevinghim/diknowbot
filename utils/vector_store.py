@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.chat_models import ChatOpenAI
 from langchain.chat_models import ChatAnthropic
@@ -12,7 +12,7 @@ def connect_to_vectorstore(
     port: Optional[int] = None,
     api_key: Optional[str] = None,
     collection_name: str = "documents_collection"
-) -> Tuple[QdrantClient, bool]:
+) -> Tuple[QdrantClient, Dict]:
     """
     Connect to Qdrant vector store
     
@@ -23,15 +23,20 @@ def connect_to_vectorstore(
         collection_name (str): Name of the collection
         
     Returns:
-        Tuple[QdrantClient, bool]: Configured Qdrant client and is_cloud flag
+        Tuple[QdrantClient, Dict]: Configured Qdrant client and connection params
     """
+    connection_params = {
+        'is_cloud': host.startswith('http'),
+        'host': host,
+        'port': port,
+        'api_key': api_key
+    }
+    
     try:
-        if host.startswith('http'):
-            # Cloud connection
-            return QdrantClient(url=host, api_key=api_key), True
+        if connection_params['is_cloud']:
+            return QdrantClient(url=host, api_key=api_key), connection_params
         else:
-            # Local connection
-            return QdrantClient(host=host, port=port), False
+            return QdrantClient(host=host, port=port), connection_params
     except Exception as e:
         raise Exception(f"Error connecting to Qdrant: {str(e)}")
 
@@ -40,7 +45,7 @@ def load_data_into_vectorstore(
     texts: List[str],
     api_key: str,
     collection_name: str = "documents_collection",
-    is_cloud: bool = False
+    connection_params: Dict = None
 ) -> None:
     """
     Load text chunks into Qdrant vector store
@@ -50,18 +55,18 @@ def load_data_into_vectorstore(
         texts (List[str]): List of text chunks to load
         api_key (str): OpenAI API key for embeddings
         collection_name (str): Name of the collection
-        is_cloud (bool): Whether using cloud Qdrant
+        connection_params (Dict): Connection parameters
     """
     try:
         # Use OpenAI embeddings
         embeddings = OpenAIEmbeddings(openai_api_key=api_key)
         
-        if is_cloud:
+        if connection_params['is_cloud']:
             Qdrant.from_texts(
                 texts=texts,
                 embedding=embeddings,
-                url="https://6037f3a0-f569-4322-bbfa-179e30253d9d.us-east4-0.gcp.cloud.qdrant.io",
-                api_key="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.40v8NLDkLdBIKpVjWJuU3ByUr8uVCZ5lpdVcm7q6I3A",
+                url=connection_params['host'],
+                api_key=connection_params['api_key'],
                 collection_name=collection_name,
                 force_recreate=True
             )
@@ -69,8 +74,8 @@ def load_data_into_vectorstore(
             Qdrant.from_texts(
                 texts=texts,
                 embedding=embeddings,
-                host="localhost",
-                port=6333,
+                host=connection_params['host'],
+                port=connection_params['port'],
                 collection_name=collection_name,
                 force_recreate=True
             )
