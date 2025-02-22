@@ -289,7 +289,6 @@ if load_data_button:
 # Chat interface
 if st.session_state['documents_loaded']:
     try:
-        # Get the QdrantClient and create a fresh Qdrant instance
         embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
         vectorstore = Qdrant(
             client=st.session_state['vector_store'],
@@ -297,10 +296,13 @@ if st.session_state['documents_loaded']:
             embeddings=embeddings
         )
         
-        # Test retrieval directly
-        st.write("Debug - Testing retrieval...")
-        test_results = vectorstore.similarity_search("test", k=1)
-        st.write(f"Debug - Retrieved document: {test_results[0].page_content[:100] if test_results else 'None'}")
+        # Test simple search
+        st.write("Testing search...")
+        results = vectorstore.similarity_search_with_score("test")
+        st.write(f"Found {len(results)} results")
+        if results:
+            doc, score = results[0]
+            st.write(f"First result: {doc.page_content[:100]}")
         
         # Create the chat model
         if model_provider == "Anthropic":

@@ -8,6 +8,7 @@ from qdrant_client.http import models as rest
 from qdrant_client.http.models import Distance, VectorParams
 import streamlit as st
 from uuid import uuid4
+from langchain.schema import Document
 
 def connect_to_vectorstore(
     host: str,
@@ -64,23 +65,17 @@ def load_data_into_vectorstore(
     collection_name: str = "documents_collection",
     connection_params: Optional[Dict] = None
 ) -> None:
-    """
-    Load text chunks into Qdrant vector store
-    """
     try:
-        # Debug the texts
-        st.write("Debug - First few chunks:")
-        for i, text in enumerate(texts[:3]):
-            st.write(f"Chunk {i}: {text[:100]}...")
-        
-        # Use OpenAI embeddings
         embeddings = OpenAIEmbeddings(openai_api_key=api_key)
         
-        # Filter out any empty texts
-        valid_texts = [text for text in texts if text and text.strip()]
+        # Convert texts to Documents
+        documents = [
+            Document(page_content=text, metadata={"source": f"chunk_{i}"})
+            for i, text in enumerate(texts)
+            if text and text.strip()
+        ]
         
-        if not valid_texts:
-            raise ValueError("No valid text chunks to load")
+        st.write(f"Debug - Created {len(documents)} documents")
         
         # Create Qdrant wrapper
         qdrant = Qdrant(
@@ -89,16 +84,13 @@ def load_data_into_vectorstore(
             embeddings=embeddings
         )
         
-        # Load texts directly using Qdrant's add_texts method
-        qdrant.add_texts(
-            texts=valid_texts,
-            ids=[str(uuid4()) for _ in range(len(valid_texts))]
-        )
+        # Add documents
+        qdrant.add_documents(documents)
+        st.success(f"Successfully loaded {len(documents)} documents")
         
-        st.success(f"Successfully loaded {len(valid_texts)} documents into Qdrant")
     except Exception as e:
-        st.error(f"Data loading error details: {str(e)}")
-        raise Exception(f"Error loading data into vector store: {str(e)}")
+        st.error(f"Data loading error: {str(e)}")
+        raise
 
 def load_chain(client: QdrantClient, api_key: str,
                collection_name: str = "documents_collection",
