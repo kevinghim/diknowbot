@@ -68,11 +68,19 @@ def load_data_into_vectorstore(
     Load text chunks into Qdrant vector store
     """
     try:
+        # Debug the texts
+        st.write("Debug - First few chunks:")
+        for i, text in enumerate(texts[:3]):
+            st.write(f"Chunk {i}: {text[:100]}...")
+        
         # Use OpenAI embeddings
         embeddings = OpenAIEmbeddings(openai_api_key=api_key)
         
-        # Debug info
-        st.write(f"Debug - Loading {len(texts)} documents into collection: {collection_name}")
+        # Filter out any empty texts
+        valid_texts = [text for text in texts if text and text.strip()]
+        
+        if not valid_texts:
+            raise ValueError("No valid text chunks to load")
         
         # Create Qdrant wrapper
         qdrant = Qdrant(
@@ -81,13 +89,13 @@ def load_data_into_vectorstore(
             embeddings=embeddings
         )
         
-        # Load texts directly using Qdrant's from_texts method
+        # Load texts directly using Qdrant's add_texts method
         qdrant.add_texts(
-            texts=texts,
-            ids=[str(uuid4()) for _ in range(len(texts))]
+            texts=valid_texts,
+            ids=[str(uuid4()) for _ in range(len(valid_texts))]
         )
         
-        st.success(f"Successfully loaded {len(texts)} documents into Qdrant")
+        st.success(f"Successfully loaded {len(valid_texts)} documents into Qdrant")
     except Exception as e:
         st.error(f"Data loading error details: {str(e)}")
         raise Exception(f"Error loading data into vector store: {str(e)}")

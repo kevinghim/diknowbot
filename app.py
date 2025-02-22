@@ -367,3 +367,25 @@ st.markdown(
     "Made with ❤️ using Streamlit, LangChain, and Qdrant. "
     "Upload your documents and start chatting!"
 )
+
+def process_documents(documents: List[str]) -> List[str]:
+    """Process documents into chunks."""
+    chunks = []
+    for doc in documents:
+        if doc and isinstance(doc, str):  # Verify it's a non-empty string
+            # Split into smaller chunks (adjust chunk_size as needed)
+            chunk_size = 1000
+            for i in range(0, len(doc), chunk_size):
+                chunk = doc[i:i + chunk_size].strip()
+                if chunk:  # Only add non-empty chunks
+                    chunks.append(chunk)
+    
+    # Debug the chunks
+    st.write(f"Debug - Total chunks created: {len(chunks)}")
+    if chunks:
+        st.write("Debug - First chunk preview:", chunks[0][:100])
+    
+    if not chunks:
+        raise ValueError("No valid text chunks were created from the documents")
+        
+    return chunks
