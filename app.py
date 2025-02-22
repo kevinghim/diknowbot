@@ -268,9 +268,9 @@ if st.session_state['documents_loaded']:
             model_name
         )
         
-        # Display chat history (newest first, growing upward)
+        # Display chat history (oldest at top, newest just above input)
         if st.session_state['generated']:
-            for i in range(len(st.session_state['generated']) - 1, -1, -1):
+            for i in range(len(st.session_state['generated'])):
                 message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
                 message(st.session_state["generated"][i][1], key=str(i))
         
