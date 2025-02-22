@@ -147,15 +147,15 @@ with st.sidebar:
         st.subheader("Vector Database Settings")
         
         # Check if running on Streamlit Cloud
-        is_deployed = os.environ.get('STREAMLIT_DEPLOYED', 'false').lower() == 'true'
+        is_deployed = st.secrets.get("STREAMLIT_DEPLOYED", "false").lower() == 'true'
 
         # Initialize qdrant settings
         if is_deployed:
-            # Remove any trailing slashes and ensure proper URL format
-            qdrant_host = "https://6037f3a0-f569-4322-bbfa-179e30253d9d.us-east4-0.gcp.cloud.qdrant.io:6333"
-            qdrant_api_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.40v8NLDkLdBIKpVjWJuU3ByUr8uVCZ5lpdVcm7q6I3A"
+            # Get settings from secrets
+            qdrant_host = st.secrets.get("QDRANT_HOST")
+            qdrant_api_key = st.secrets.get("QDRANT_API_KEY")
             qdrant_port = None
-            st.write("Using cloud Qdrant instance")
+            st.write(f"Using cloud Qdrant instance at {qdrant_host}")
         else:
             # Local development settings
             qdrant_host = st.text_input(
@@ -176,6 +176,10 @@ with st.sidebar:
             help="Name for the vector collection"
         )
     
+    # Debug output
+    st.write(f"Debug - is_deployed: {is_deployed}")
+    st.write(f"Debug - qdrant_host: {qdrant_host}")
+
     # Load data button
     load_data_button = st.button("Load Documents into Database", use_container_width=True)
 
@@ -187,7 +191,7 @@ if load_data_button:
         with st.spinner("Loading and processing documents..."):
             try:
                 # Initialize vector store
-                vector_store, connection_params = connect_to_vectorstore(
+                vector_store = connect_to_vectorstore(
                     host=qdrant_host,
                     port=qdrant_port,
                     api_key=qdrant_api_key,
