@@ -8,6 +8,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models as rest
 from qdrant_client.http.models import Distance, VectorParams
 import streamlit as st
+from uuid import uuid4
 
 def connect_to_vectorstore(
     host: str,
@@ -74,11 +75,14 @@ def load_data_into_vectorstore(
         # Debug info
         st.write(f"Debug - Loading {len(texts)} documents into collection: {collection_name}")
         
+        # Generate UUIDs for points
+        point_ids = [str(uuid4()) for _ in range(len(texts))]
+        
         # Upload directly using client
         client.upsert(
             collection_name=collection_name,
             points=rest.Batch(
-                ids=[str(i) for i in range(len(texts))],
+                ids=point_ids,
                 vectors=vectors,
                 payloads=[{"text": text} for text in texts]
             )
