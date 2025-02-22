@@ -146,24 +146,32 @@ with st.sidebar:
         # Vector store settings
         st.subheader("Vector Database Settings")
         
-        qdrant_host = st.text_input(
-            "Qdrant Host",
-            value="localhost",
-            help="Hostname for Qdrant vector database"
-        )
-        
-        qdrant_port = st.number_input(
-            "Qdrant Port",
-            value=6333,
-            help="Port for Qdrant vector database"
-        )
-        
+        # Check if running on Streamlit Cloud
+        is_deployed = os.environ.get('STREAMLIT_DEPLOYED', False)
+
+        if is_deployed:
+            qdrant_host = "https://6037f3a0-f569-4322-bbfa-179e30253d9d.us-east4-0.gcp.cloud.qdrant.io"
+            # For cloud deployment, port is typically not needed as it's part of the URL
+            qdrant_port = None
+        else:
+            # Local development settings
+            qdrant_host = st.text_input(
+                "Qdrant Host",
+                value="localhost",
+                help="Hostname for Qdrant vector database"
+            )
+            qdrant_port = st.number_input(
+                "Qdrant Port",
+                value=6333,
+                help="Port for Qdrant vector database"
+            )
+
         collection_name = st.text_input(
             "Collection Name",
             value="documents_collection",
             help="Name for the vector collection"
         )
-        
+    
     # Load data button
     load_data_button = st.button("Load Documents into Database", use_container_width=True)
 
