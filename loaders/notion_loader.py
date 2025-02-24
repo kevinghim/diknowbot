@@ -1,5 +1,6 @@
 import requests
 from typing import List, Dict, Any
+from utils.document_valuation import evaluate_document_value
 
 class NotionLoader:
     """Loader for Notion documents"""
@@ -94,7 +95,7 @@ class NotionLoader:
             page_text = []
 
             if object_type == 'page':
-                # Try to get title from different possible locations
+                # Get title
                 title_content = item.get('properties', {}).get('title')
                 if title_content:
                     title_items = title_content.get('title', [])
@@ -105,15 +106,25 @@ class NotionLoader:
                     if len(name_items) > 0:
                         title = name_items[0].get('text', {}).get('content', '')
 
-                # Add title and content
-                page_text.append([title])
+                # Get content
+                page_text.append(title)
                 page_content = self.get_page_text(object_id)
-                page_text.append(page_content)
+                page_text.extend(page_content)
 
                 # Flatten list and join with periods
                 flat_list = [item for sublist in page_text for item in sublist]
                 text_per_page = ". ".join(flat_list)
+                
                 if len(text_per_page) > 0:
                     documents.append(text_per_page)
+                    # Evaluate document value
+                    if title:
+                        doc_name = f"Notion: {title}"
+                    else:
+                        doc_name = f"Notion page {object_id}"
+                    
+                    value_info = evaluate_document_value(text_per_page, doc_name)
+                    if 'document_values' in st.session_state:
+                        st.session_state['document_values'][doc_name] = value_info
 
         return documents

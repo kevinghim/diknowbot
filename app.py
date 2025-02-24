@@ -143,21 +143,25 @@ with st.sidebar:
     with doc_values_tab:
         st.subheader("Document Value Estimates")
         if st.session_state['document_values']:
-            # Create a clean table-like display
-            for filename, value_info in st.session_state['document_values'].items():
+            # Sort documents by value for better display
+            sorted_docs = dict(sorted(
+                st.session_state['document_values'].items(),
+                key=lambda x: x[1]['estimated_value'],
+                reverse=True
+            ))
+            for filename, value_info in sorted_docs.items():
                 col1, col2 = st.columns([2, 1])
                 with col1:
                     st.write(f"📄 {filename}")
                 with col2:
                     st.write(f"${value_info['estimated_value']}")
                 
-                # Add value factors in an expander
                 with st.expander("View value factors"):
                     for factor in value_info['factors']:
                         st.write(f"• {factor}")
                 st.divider()
         else:
-            st.info("No documents have been evaluated yet. Upload documents to see their estimated values.")
+            st.info("No documents have been evaluated yet.")
             
     with model_config_tab:
         st.subheader("Model Configuration")
