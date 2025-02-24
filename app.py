@@ -6,8 +6,8 @@ from typing import List, Dict, Any, Optional
 from langchain_community.vectorstores import Qdrant
 from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.chat_models import ChatOpenAI, ChatAnthropic
-from langchain_core.memory import ConversationBufferMemory
-from langchain_community.chains import ConversationalRetrievalChain
+from langchain.memory.chat_memory import ConversationBufferMemory
+from langchain.chains.conversational_retrieval.base import ConversationalRetrievalChain
 
 # Import custom modules
 from loaders.notion_loader import NotionLoader
