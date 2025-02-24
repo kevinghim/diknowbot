@@ -70,7 +70,7 @@ def handle_enter(key):
         st.session_state.submit_pressed = True
 
 # Main app title
-col1, col2 = st.columns([1, 10])  # Adjust ratio as needed
+col1, col2 = st.columns([1, 14])  # Adjust ratio as needed
 with col1:
     st.image("assets/dino_icon.png", width=60)
 with col2:
