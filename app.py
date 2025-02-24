@@ -22,8 +22,8 @@ from utils.vector_store import (
 
 # Set page config
 st.set_page_config(
-    page_title="Document Knowledge Bot",
-    page_icon="📚",
+    page_title="Dino the Knowledge Bot",
+    page_icon="assets/dino_icon.png",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -70,7 +70,8 @@ def handle_enter(key):
         st.session_state.submit_pressed = True
 
 # Main app title
-st.title('📚 Chat with Your Documents')
+st.image("assets/dino_icon.png", width=50)
+st.title('Dino the Knowledge Bot')
 st.subheader('Ask questions about your Notion, PDF, and Word documents')
 
 # Set up sidebar for configuration
@@ -355,7 +356,7 @@ if st.session_state['documents_loaded']:
                 message(
                     st.session_state['past'][i],
                     is_user=True,
-                    avatar_style="thumbs",  # Options: "initials", "bottts", "avataaars", "jdenticon", "gridy", "identicon", "micah", "miniavs", "adventurer", "big-ears", "big-smile", "bottts", "croodles", "fun-emoji", "icons", "lorelei", "notionists", "open-peeps", "personas", "pixel-art", "thumbs"
+                    avatar_style="big-smile",  # Options: "initials", "bottts", "avataaars", "jdenticon", "gridy", "identicon", "micah", "miniavs", "adventurer", "big-ears", "big-smile", "bottts", "croodles", "fun-emoji", "icons", "lorelei", "notionists", "open-peeps", "personas", "pixel-art", "thumbs"
                     key=str(i) + '_user'
                 )
                 message(
