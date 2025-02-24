@@ -20,6 +20,8 @@ from utils.vector_store import (
     load_chain
 )
 
+from utils.document_valuation import evaluate_document_value
+
 # Set page config
 st.set_page_config(
     page_title="Dino the Knowledge Bot",
@@ -43,6 +45,9 @@ if 'temp_file_paths' not in st.session_state:
 
 if 'submit_pressed' not in st.session_state:
     st.session_state.submit_pressed = False
+
+if 'document_values' not in st.session_state:
+    st.session_state['document_values'] = {}
 
 # Function to save uploaded files temporarily
 def save_uploaded_file(uploaded_file) -> str:
@@ -72,7 +77,7 @@ def handle_enter(key):
 # Main app title
 col1, col2 = st.columns([1, 14])  # Adjust ratio as needed
 with col1:
-    st.image("assets/dino_icon.png", width=60)
+    st.image("assets/dino_icon.png", width=70)
 with col2:
     st.title('Dino the Knowledge Bot')
 st.subheader('Ask questions about your Notion, PDF, and Word documents')
@@ -82,7 +87,12 @@ with st.sidebar:
     st.header("Configuration")
     
     # API Keys
-    api_key_tab, file_upload_tab, model_config_tab = st.tabs(["API Keys", "Upload Files", "Model Config"])
+    api_key_tab, file_upload_tab, doc_values_tab, model_config_tab = st.tabs([
+        "API Keys", 
+        "Upload Files", 
+        "Document Values",
+        "Model Config"
+    ])
     
     with api_key_tab:
         openai_api_key = st.text_input(
@@ -130,6 +140,25 @@ with st.sidebar:
             help="Requires Notion API Key"
         )
     
+    with doc_values_tab:
+        st.subheader("Document Value Estimates")
+        if st.session_state['document_values']:
+            # Create a clean table-like display
+            for filename, value_info in st.session_state['document_values'].items():
+                col1, col2 = st.columns([2, 1])
+                with col1:
+                    st.write(f"📄 {filename}")
+                with col2:
+                    st.write(f"${value_info['estimated_value']}")
+                
+                # Add value factors in an expander
+                with st.expander("View value factors"):
+                    for factor in value_info['factors']:
+                        st.write(f"• {factor}")
+                st.divider()
+        else:
+            st.info("No documents have been evaluated yet. Upload documents to see their estimated values.")
+            
     with model_config_tab:
         st.subheader("Model Configuration")
         
@@ -230,8 +259,16 @@ if load_data_button:
                             if temp_path:
                                 pdf_doc = pdf_loader.load_document(temp_path)
                                 if pdf_doc:
-                                    all_documents.append(pdf_doc['content'])
+                                    content = pdf_doc['content']
+                                    all_documents.append(content)
+                                    # Evaluate document value
+                                    value_info = evaluate_document_value(content, pdf_file.name)
+                                    st.session_state['document_values'][pdf_file.name] = value_info
                                     st.sidebar.success(f"✅ Loaded PDF: {pdf_file.name}")
+                                    st.sidebar.info(f"📊 Estimated value: ${value_info['estimated_value']}")
+                                    with st.sidebar.expander(f"Value factors for {pdf_file.name}"):
+                                        for factor in value_info['factors']:
+                                            st.write(f"• {factor}")
                         except Exception as e:
                             st.sidebar.error(f"Error processing PDF {pdf_file.name}: {str(e)}")
                 
@@ -244,8 +281,16 @@ if load_data_button:
                             if temp_path:
                                 docx_doc = docx_loader.load_document(temp_path)
                                 if docx_doc:
-                                    all_documents.append(docx_doc['content'])
+                                    content = docx_doc['content']
+                                    all_documents.append(content)
+                                    # Evaluate document value
+                                    value_info = evaluate_document_value(content, docx_file.name)
+                                    st.session_state['document_values'][docx_file.name] = value_info
                                     st.sidebar.success(f"✅ Loaded Word document: {docx_file.name}")
+                                    st.sidebar.info(f"📊 Estimated value: ${value_info['estimated_value']}")
+                                    with st.sidebar.expander(f"Value factors for {docx_file.name}"):
+                                        for factor in value_info['factors']:
+                                            st.write(f"• {factor}")
                         except Exception as e:
                             st.sidebar.error(f"Error processing Word document {docx_file.name}: {str(e)}")
                 
