@@ -22,7 +22,7 @@ from utils.vector_store import (
 
 # Set page config
 st.set_page_config(
-    page_title="Document Chat Assistant",
+    page_title="Document Knowledge Bot",
     page_icon="📚",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -352,8 +352,17 @@ if st.session_state['documents_loaded']:
         # Display chat history
         if st.session_state['generated']:
             for i in range(len(st.session_state['generated']) - 1, -1, -1):
-                message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
-                message(st.session_state["generated"][i], key=str(i))
+                message(
+                    st.session_state['past'][i],
+                    is_user=True,
+                    avatar_style="thumbs",  # Options: "initials", "bottts", "avataaars", "jdenticon", "gridy", "identicon", "micah", "miniavs", "adventurer", "big-ears", "big-smile", "bottts", "croodles", "fun-emoji", "icons", "lorelei", "notionists", "open-peeps", "personas", "pixel-art", "thumbs"
+                    key=str(i) + '_user'
+                )
+                message(
+                    st.session_state["generated"][i],
+                    avatar_style="bottts",  # Different style for the bot
+                    key=str(i)
+                )
                 
         # Reset submit flag
         if st.session_state.submit_pressed:
