@@ -4,10 +4,10 @@ import os
 import tempfile
 from typing import List, Dict, Any, Optional
 from langchain_community.vectorstores import Qdrant
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.chat_models import ChatOpenAI, ChatAnthropic
-from langchain.memory import ConversationBufferMemory
-from langchain.chains import ConversationalRetrievalChain
+from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.chat_models import ChatOpenAI, ChatAnthropic
+from langchain_core.memory import ConversationBufferMemory
+from langchain_community.chains import ConversationalRetrievalChain
 
 # Import custom modules
 from loaders.notion_loader import NotionLoader

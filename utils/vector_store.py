@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple, Dict
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.chat_models import ChatOpenAI
+from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import ConversationalRetrievalChain
 from langchain_community.vectorstores import Qdrant
 from qdrant_client import QdrantClient
