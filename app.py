@@ -70,9 +70,9 @@ def handle_enter(key):
         st.session_state.submit_pressed = True
 
 # Main app title
-col1, col2 = st.columns([1, 6])  # Adjust ratio as needed
+col1, col2 = st.columns([1, 3])  # Adjust ratio as needed
 with col1:
-    st.image("assets/dino_icon.png", width=50)
+    st.image("assets/dino_icon.png", width=60)
 with col2:
     st.title('Dino the Knowledge Bot')
 st.subheader('Ask questions about your Notion, PDF, and Word documents')
