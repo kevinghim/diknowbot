@@ -70,8 +70,11 @@ def handle_enter(key):
         st.session_state.submit_pressed = True
 
 # Main app title
-st.image("assets/dino_icon.png", width=50)
-st.title('Dino the Knowledge Bot')
+col1, col2 = st.columns([1, 6])  # Adjust ratio as needed
+with col1:
+    st.image("assets/dino_icon.png", width=50)
+with col2:
+    st.title('Dino the Knowledge Bot')
 st.subheader('Ask questions about your Notion, PDF, and Word documents')
 
 # Set up sidebar for configuration
@@ -356,7 +359,7 @@ if st.session_state['documents_loaded']:
                 message(
                     st.session_state['past'][i],
                     is_user=True,
-                    avatar_style="big-smile",  # Options: "initials", "bottts", "avataaars", "jdenticon", "gridy", "identicon", "micah", "miniavs", "adventurer", "big-ears", "big-smile", "bottts", "croodles", "fun-emoji", "icons", "lorelei", "notionists", "open-peeps", "personas", "pixel-art", "thumbs"
+                    avatar_style="avataaars",  # Options: "initials", "bottts", "avataaars", "jdenticon", "gridy", "identicon", "micah", "miniavs", "adventurer", "big-ears", "big-smile", "bottts", "croodles", "fun-emoji", "icons", "lorelei", "notionists", "open-peeps", "personas", "pixel-art", "thumbs"
                     key=str(i) + '_user'
                 )
                 message(
