@@ -2,8 +2,8 @@ from typing import Dict, Any
 
 def evaluate_document_value(content: str, filename: str) -> Dict[str, Any]:
     """
-    Evaluate a document's potential value using a comprehensive formula:
-    Value = Base Value × Multiplier × Uniqueness Factor × Quality Factor × Demand Adjustment
+    Evaluate a document's potential value using comprehensive formula including authority metrics:
+    Value = Base Value × Multiplier × Uniqueness Factor × Quality Factor × Demand Adjustment × Authority Multiplier
     """
     factors = []
     
@@ -117,8 +117,114 @@ def evaluate_document_value(content: str, filename: str) -> Dict[str, Any]:
     demand_adjustment = min(demand_adjustment, 2.0)
     factors.append(f"Market demand adjustment: {demand_adjustment:.2f}x")
     
-    # Calculate final value
-    final_value = base_value * size_multiplier * uniqueness_factor * quality_factor * demand_adjustment
+    # 6. Calculate Authority Multiplier
+    authority_score = 0.7  # Base authority score
+    
+    # Credential indicators
+    credential_indicators = {
+        'ph.d': 0.8,
+        'professor': 0.8,
+        'dr.': 0.6,
+        'expert': 0.4,
+        'researcher': 0.4,
+        'scientist': 0.4,
+        'director': 0.3,
+        'chief': 0.3,
+        'lead': 0.2
+    }
+    
+    # Citation impact indicators
+    citation_indicators = {
+        'cited': 0.3,
+        'referenced': 0.3,
+        'published in': 0.4,
+        'journal': 0.3,
+        'peer-reviewed': 0.5,
+        'conference': 0.3
+    }
+    
+    # Domain recognition indicators
+    domain_indicators = {
+        'renowned': 0.4,
+        'recognized': 0.3,
+        'leading': 0.3,
+        'pioneer': 0.4,
+        'authority': 0.4,
+        'specialist': 0.3
+    }
+    
+    # Community standing indicators
+    community_indicators = {
+        'committee': 0.3,
+        'board member': 0.4,
+        'chairman': 0.4,
+        'founder': 0.3,
+        'advisor': 0.3
+    }
+    
+    # Industry authority indicators
+    industry_indicators = {
+        'industry leader': 0.4,
+        'thought leader': 0.4,
+        'innovator': 0.3,
+        'veteran': 0.3,
+        'executive': 0.3
+    }
+    
+    content_lower = content.lower()
+    
+    # Calculate credential score
+    credential_score = sum(score for term, score in credential_indicators.items() 
+                         if term in content_lower)
+    credential_score = min(credential_score, 1.0)
+    
+    # Calculate citation impact
+    citation_score = sum(score for term, score in citation_indicators.items() 
+                        if term in content_lower)
+    citation_score = min(citation_score, 1.0)
+    
+    # Calculate domain recognition
+    domain_score = sum(score for term, score in domain_indicators.items() 
+                      if term in content_lower)
+    domain_score = min(domain_score, 1.0)
+    
+    # Calculate community standing
+    community_score = sum(score for term, score in community_indicators.items() 
+                         if term in content_lower)
+    community_score = min(community_score, 1.0)
+    
+    # Calculate industry authority
+    industry_score = sum(score for term, score in industry_indicators.items() 
+                        if term in content_lower)
+    industry_score = min(industry_score, 1.0)
+    
+    # Calculate final authority multiplier
+    authority_multiplier = (0.7 + 
+                          (credential_score * 0.05) +
+                          (citation_score * 0.1) +
+                          (domain_score * 0.05) +
+                          (community_score * 0.05) +
+                          (industry_score * 0.05))
+    
+    authority_multiplier = min(max(authority_multiplier, 0.7), 1.3)
+    
+    # Add authority factors to the explanation
+    if credential_score > 0:
+        factors.append(f"Credential score: {credential_score:.2f}")
+    if citation_score > 0:
+        factors.append(f"Citation impact: {citation_score:.2f}")
+    if domain_score > 0:
+        factors.append(f"Domain recognition: {domain_score:.2f}")
+    if community_score > 0:
+        factors.append(f"Community standing: {community_score:.2f}")
+    if industry_score > 0:
+        factors.append(f"Industry authority: {industry_score:.2f}")
+    
+    factors.append(f"Authority multiplier: {authority_multiplier:.2f}x")
+    
+    # Calculate final value with authority multiplier
+    final_value = (base_value * size_multiplier * uniqueness_factor * 
+                  quality_factor * demand_adjustment * authority_multiplier)
     
     # Add file format considerations
     file_ext = filename.split('.')[-1].lower()
@@ -131,7 +237,11 @@ def evaluate_document_value(content: str, filename: str) -> Dict[str, Any]:
     
     # Summary calculation
     factors.append(f"Base value: ${base_value:.2f}")
-    factors.append(f"Final calculation: ${base_value:.2f} × {size_multiplier:.2f} × {uniqueness_factor:.2f} × {quality_factor:.2f} × {demand_adjustment:.2f}")
+    factors.append(
+        f"Final calculation: ${base_value:.2f} × {size_multiplier:.2f} × "
+        f"{uniqueness_factor:.2f} × {quality_factor:.2f} × "
+        f"{demand_adjustment:.2f} × {authority_multiplier:.2f}"
+    )
     
     return {
         'estimated_value': round(final_value, 2),
