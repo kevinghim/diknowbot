@@ -84,7 +84,7 @@ QDRANT_API_KEY=your_key
 We welcome contributions! Please see our contributing guidelines for more details.
 
 ## License
-[Your chosen license]
+MIT License
 
 ## Contact
 [Your contact information]
