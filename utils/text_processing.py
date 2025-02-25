@@ -1,24 +1,34 @@
 import tiktoken
 from typing import List, Dict, Any
 
-def chunk_tokens(text: str, token_limit: int) -> list:
+def chunk_tokens(text: str, model_type: str) -> List[str]:
     """
     Chunk text into smaller pieces based on token limit
     
     Args:
         text (str): The text to chunk
-        token_limit (int): Maximum tokens per chunk
+        model_type (str): The model type for token counting
         
     Returns:
         list: List of text chunks
     """
-    tokenizer = tiktoken.get_encoding("cl100k_base")
+    if model_type.lower() == "anthropic":
+        import anthropic
+        client = anthropic.Anthropic()
+        max_tokens = 100000  # Claude's context window
+        # Use the messages API for token counting
+        token_count = client.messages.count_tokens(text)
+    else:  # OpenAI
+        encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
+        max_tokens = 4096
+        token_count = len(encoding.encode(text))
 
     chunks = []
+    tokenizer = tiktoken.get_encoding("cl100k_base")
     tokens = tokenizer.encode(text, disallowed_special=())
 
     while tokens:
-        chunk = tokens[:token_limit]
+        chunk = tokens[:max_tokens]
         chunk_text = tokenizer.decode(chunk)
         last_punctuation = max(
             chunk_text.rfind("."),
@@ -49,5 +59,5 @@ def process_documents(documents: List[str], chunk_size: int = 100) -> List[str]:
     """
     chunks = []
     for doc in documents:
-        chunks.extend(chunk_tokens(doc, chunk_size))
+        chunks.extend(chunk_tokens(doc, "anthropic"))
     return chunks
