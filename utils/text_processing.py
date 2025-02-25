@@ -16,8 +16,8 @@ def chunk_tokens(text: str, model_type: str) -> List[str]:
         import anthropic
         client = anthropic.Anthropic()
         max_tokens = 100000  # Claude's context window
-        # Use the messages API for token counting
-        token_count = client.messages.count_tokens(text)
+        messages = [{"role": "user", "content": text}]
+        token_count = client.messages.count_tokens(messages=messages)
     else:  # OpenAI
         encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
         max_tokens = 4096
