@@ -1,4 +1,5 @@
 annotated-types==0.7.0
+anthropic>=0.7.0
 anyio==4.8.0
 certifi==2025.1.31
 charset-normalizer==3.4.1
@@ -11,8 +12,9 @@ jiter==0.8.2
 jsonpatch==1.33
 jsonpointer==3.0.0
 langchain>=0.1.0
+langchain-anthropic>=0.3.7
 langchain-community>=0.0.10
-langchain-core>=0.1.10
+langchain-core>=0.3.34,<1.0.0
 langchain-openai>=0.0.5
 langsmith==0.1.147
 numpy==1.26.4
@@ -24,6 +26,7 @@ pydantic_core==2.27.2
 PyPDF2
 pytesseract
 python-docx
+python-dotenv>=1.0.0
 PyYAML==6.0.2
 qdrant-client
 regex==2024.11.6
