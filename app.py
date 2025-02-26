@@ -49,6 +49,12 @@ if 'submit_pressed' not in st.session_state:
 if 'document_values' not in st.session_state:
     st.session_state['document_values'] = {}
 
+if 'total_document_value' not in st.session_state:
+    st.session_state['total_document_value'] = 0.0
+    
+if 'document_topics' not in st.session_state:
+    st.session_state['document_topics'] = {}
+
 # Function to save uploaded files temporarily
 def save_uploaded_file(uploaded_file) -> str:
     try:
@@ -81,6 +87,32 @@ with col1:
 with col2:
     st.title('Dino the Knowledge Bot')
 st.subheader('Ask questions about your Notion, PDF, and Word documents')
+
+# Add this right after your title, before the tabs
+col1, col2 = st.columns([1, 3])
+with col1:
+    st.metric(
+        label="Total Document Value", 
+        value=f"${st.session_state['total_document_value']:,.2f}",
+        delta=None,
+        delta_color="normal"
+    )
+    
+    if st.session_state['document_topics']:
+        with st.expander("Document Topics"):
+            topics_count = {}
+            for doc, topics in st.session_state['document_topics'].items():
+                for topic in topics:
+                    if topic in topics_count:
+                        topics_count[topic] += 1
+                    else:
+                        topics_count[topic] = 1
+            
+            # Sort topics by count
+            sorted_topics = dict(sorted(topics_count.items(), key=lambda x: x[1], reverse=True))
+            
+            for topic, count in sorted_topics.items():
+                st.write(f"{topic} ({count})")
 
 # Set up sidebar for configuration
 with st.sidebar:
@@ -142,6 +174,18 @@ with st.sidebar:
     
     with doc_values_tab:
         st.subheader("Document Value Estimates")
+        
+        # Add a summary at the top
+        st.info(f"Total document value: ${st.session_state['total_document_value']:,.2f} across {len(st.session_state['document_values'])} documents")
+        
+        # Add topic filter
+        all_topics = set()
+        for topics in st.session_state['document_topics'].values():
+            all_topics.update(topics)
+        
+        selected_topic = st.selectbox("Filter by topic", ["All Topics"] + sorted(list(all_topics)))
+        
+        # Display documents
         if st.session_state['document_values']:
             # Sort documents by value for better display
             sorted_docs = dict(sorted(
@@ -149,12 +193,20 @@ with st.sidebar:
                 key=lambda x: x[1]['estimated_value'],
                 reverse=True
             ))
+            
             for filename, value_info in sorted_docs.items():
-                col1, col2 = st.columns([2, 1])
+                # Skip if filtering by topic and document doesn't have that topic
+                if selected_topic != "All Topics" and filename in st.session_state['document_topics'] and selected_topic not in st.session_state['document_topics'][filename]:
+                    continue
+                    
+                col1, col2, col3 = st.columns([2, 1, 1])
                 with col1:
                     st.write(f"📄 {filename}")
                 with col2:
-                    st.write(f"${value_info['estimated_value']}")
+                    st.write(f"${value_info['estimated_value']:,.2f}")
+                with col3:
+                    if filename in st.session_state['document_topics']:
+                        st.write(", ".join(st.session_state['document_topics'][filename]))
                 
                 with st.expander("View value factors"):
                     for factor in value_info['factors']:
@@ -223,6 +275,46 @@ with st.sidebar:
     # Load data button
     load_data_button = st.button("Load Documents into Database", use_container_width=True)
 
+def extract_topics_with_llm(content, doc_name, api_key):
+    """Extract main topics from document content using LLM"""
+    from langchain_openai import ChatOpenAI
+    from langchain.prompts import ChatPromptTemplate
+    
+    # Truncate content if too long
+    max_chars = 10000
+    if len(content) > max_chars:
+        content = content[:max_chars] + "..."
+    
+    # Create prompt
+    prompt = ChatPromptTemplate.from_template(
+        """You are a document classification expert.
+        
+        Analyze the following document and identify the top 3-5 main topics it covers.
+        Return only a comma-separated list of topics (no numbering, no explanation).
+        Be specific but concise with topic names (1-3 words per topic).
+        
+        Document name: {doc_name}
+        
+        Document content:
+        {content}
+        
+        Topics:"""
+    )
+    
+    # Create LLM
+    llm = ChatOpenAI(
+        model="gpt-3.5-turbo",
+        openai_api_key=api_key,
+        temperature=0.0
+    )
+    
+    # Get topics
+    chain = prompt | llm
+    result = chain.invoke({"doc_name": doc_name, "content": content})
+    topics = [topic.strip() for topic in result.content.split(",")]
+    
+    return topics
+
 # Document Processing Logic
 if load_data_button:
     if not openai_api_key:
@@ -268,6 +360,9 @@ if load_data_button:
                                     # Evaluate document value
                                     value_info = evaluate_document_value(content, pdf_file.name)
                                     st.session_state['document_values'][pdf_file.name] = value_info
+                                    st.session_state['total_document_value'] += value_info['estimated_value']
+                                    topics = extract_topics_with_llm(content, pdf_file.name, openai_api_key)
+                                    st.session_state['document_topics'][pdf_file.name] = topics
                                     st.sidebar.success(f"✅ Loaded PDF: {pdf_file.name}")
                                     st.sidebar.info(f"📊 Estimated value: ${value_info['estimated_value']}")
                                     with st.sidebar.expander(f"Value factors for {pdf_file.name}"):
@@ -290,6 +385,9 @@ if load_data_button:
                                     # Evaluate document value
                                     value_info = evaluate_document_value(content, docx_file.name)
                                     st.session_state['document_values'][docx_file.name] = value_info
+                                    st.session_state['total_document_value'] += value_info['estimated_value']
+                                    topics = extract_topics_with_llm(content, docx_file.name, openai_api_key)
+                                    st.session_state['document_topics'][docx_file.name] = topics
                                     st.sidebar.success(f"✅ Loaded Word document: {docx_file.name}")
                                     st.sidebar.info(f"📊 Estimated value: ${value_info['estimated_value']}")
                                     with st.sidebar.expander(f"Value factors for {docx_file.name}"):
