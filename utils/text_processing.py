@@ -15,13 +15,10 @@ def chunk_tokens(text: str, model_type: str, api_key: str = None) -> List[str]:
     """
     if model_type.lower() == "anthropic":
         import anthropic
-        client = anthropic.Anthropic(api_key=api_key)
+        # Use tiktoken for token counting instead of Anthropic's API
+        encoding = tiktoken.get_encoding("cl100k_base")  # Claude uses cl100k_base
         max_tokens = 100000  # Claude's context window
-        messages = [{"role": "user", "content": text}]
-        token_count = client.messages.count_tokens(
-            messages=messages,
-            model="claude-3-sonnet-20240229"  # Use an appropriate Claude model
-        )
+        token_count = len(encoding.encode(text))
     else:  # OpenAI
         encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
         max_tokens = 4096

@@ -181,7 +181,7 @@ with st.sidebar:
         else:
             model_name = st.selectbox(
                 "Select Anthropic Model",
-                options=["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"],
+                options=["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307", "claude-3-haiku"],
                 index=1,
             )
             
