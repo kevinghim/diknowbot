@@ -57,44 +57,35 @@ def connect_to_vectorstore(
         st.error(str(e))
         raise
 
-def load_data_into_vectorstore(
-    client: QdrantClient,
-    texts: List[str],
-    api_key: str,
-    collection_name: str = "documents_collection",
-    connection_params: Optional[Dict] = None
-) -> None:
+def load_data_into_vectorstore(client, chunks, api_key, collection_name, qdrant_config, model_type="openai"):
+    """
+    Load chunks into vector store
+    
+    Args:
+        client: Qdrant client
+        chunks: Text chunks to load
+        api_key: API key for embeddings
+        collection_name: Name of the collection
+        qdrant_config: Configuration for Qdrant
+        model_type: Type of model (openai or anthropic)
+    """
     try:
+        # Initialize embeddings
         embeddings = OpenAIEmbeddings(openai_api_key=api_key)
         
-        # Filter and prepare texts
-        valid_texts = [text for text in texts if text and text.strip()]
-        st.write(f"Debug - Processing {len(valid_texts)} valid texts")
-        
-        # Create Document objects
-        documents = [
-            Document(
-                page_content=text,
-                metadata={"source": f"doc_{i}"}
-            ) 
-            for i, text in enumerate(valid_texts)
-        ]
-        
         # Create Qdrant wrapper
-        qdrant = Qdrant(
+        vectorstore = Qdrant(
             client=client,
             collection_name=collection_name,
             embeddings=embeddings
         )
         
-        # Add documents using Langchain's method
-        qdrant.add_documents(documents)
-            
-        st.success(f"Successfully loaded {len(valid_texts)} documents")
+        # Add documents to vector store
+        vectorstore.add_texts(chunks)
         
+        return vectorstore
     except Exception as e:
-        st.error(str(e))
-        raise
+        raise Exception(f"Failed to load data into vector store: {str(e)}")
 
 def load_chain(client, collection_name, embeddings, model_type="openai", model_name="gpt-3.5-turbo", api_key=None):
     """Load a conversational retrieval chain."""
