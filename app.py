@@ -304,9 +304,12 @@ if load_data_button:
                         if model_provider == "Anthropic":
                             api_key = anthropic_api_key
                             model_type = "anthropic"
+                            # For embeddings, we still need to use OpenAI
+                            embedding_api_key = openai_api_key
                         else:
                             api_key = openai_api_key
                             model_type = "openai"
+                            embedding_api_key = openai_api_key
                             
                         chunks = process_documents(all_documents, model_type=model_type, api_key=api_key)
                         st.write(f"Debug - Created {len(chunks)} text chunks")
@@ -315,7 +318,7 @@ if load_data_button:
                         load_data_into_vectorstore(
                             vector_store,
                             chunks,
-                            api_key,
+                            embedding_api_key,  # Use OpenAI API key for embeddings
                             collection_name,
                             {
                                 'is_cloud': is_deployed,
@@ -323,7 +326,7 @@ if load_data_button:
                                 'port': qdrant_port,
                                 'api_key': qdrant_api_key
                             },
-                            model_type=model_type  # Pass model_type here
+                            model_type=model_type
                         )
                         
                         # Store the client and embeddings in session state

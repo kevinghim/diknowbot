@@ -13,24 +13,22 @@ def chunk_tokens(text: str, model_type: str, api_key: str = None) -> List[str]:
     Returns:
         list: List of text chunks
     """
+    # Use tiktoken for all token counting
+    encoding = tiktoken.get_encoding("cl100k_base")
+    
     if model_type.lower() == "anthropic":
-        import anthropic
-        # Use tiktoken for token counting instead of Anthropic's API
-        encoding = tiktoken.get_encoding("cl100k_base")  # Claude uses cl100k_base
         max_tokens = 100000  # Claude's context window
-        token_count = len(encoding.encode(text))
     else:  # OpenAI
-        encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
         max_tokens = 4096
-        token_count = len(encoding.encode(text))
+        
+    token_count = len(encoding.encode(text))
 
     chunks = []
-    tokenizer = tiktoken.get_encoding("cl100k_base")
-    tokens = tokenizer.encode(text, disallowed_special=())
+    tokens = encoding.encode(text, disallowed_special=())
 
     while tokens:
         chunk = tokens[:max_tokens]
-        chunk_text = tokenizer.decode(chunk)
+        chunk_text = encoding.decode(chunk)
         last_punctuation = max(
             chunk_text.rfind("."),
             chunk_text.rfind("?"),
@@ -43,7 +41,7 @@ def chunk_tokens(text: str, model_type: str, api_key: str = None) -> List[str]:
 
         if cleaned_text and (not cleaned_text.isspace()):
             chunks.append(cleaned_text)
-        tokens = tokens[len(tokenizer.encode(chunk_text, disallowed_special=())):]
+        tokens = tokens[len(encoding.encode(chunk_text, disallowed_special=())):]
 
     return chunks
 
