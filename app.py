@@ -321,7 +321,7 @@ def extract_topics_with_llm(content, doc_name, api_key):
         Topics:"""
     )
     
-    # Create LLM
+    # Create LLM - always use OpenAI for topic extraction
     llm = ChatOpenAI(
         model="gpt-3.5-turbo",
         openai_api_key=api_key,
