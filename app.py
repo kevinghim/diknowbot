@@ -175,15 +175,30 @@ with st.sidebar:
     with doc_values_tab:
         st.subheader("Document Value Estimates")
         
-        # Add a summary at the top
-        st.info(f"Total document value: ${st.session_state['total_document_value']:,.2f} across {len(st.session_state['document_values'])} documents")
-        
         # Add topic filter
         all_topics = set()
         for topics in st.session_state['document_topics'].values():
             all_topics.update(topics)
         
         selected_topic = st.selectbox("Filter by topic", ["All Topics"] + sorted(list(all_topics)))
+        
+        # Calculate filtered totals
+        if selected_topic == "All Topics":
+            filtered_value = st.session_state['total_document_value']
+            filtered_count = len(st.session_state['document_values'])
+        else:
+            filtered_docs = [
+                filename for filename, topics in st.session_state['document_topics'].items() 
+                if selected_topic in topics
+            ]
+            filtered_value = sum(
+                st.session_state['document_values'][filename]['estimated_value'] 
+                for filename in filtered_docs if filename in st.session_state['document_values']
+            )
+            filtered_count = len(filtered_docs)
+        
+        # Add a summary at the top with filtered values
+        st.info(f"Total document value: ${filtered_value:,.2f} across {filtered_count} documents")
         
         # Display documents
         if st.session_state['document_values']:
