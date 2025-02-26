@@ -301,14 +301,18 @@ if load_data_button:
                 if all_documents:
                     try:
                         # Process documents into chunks
-                        chunks = process_documents(all_documents)
+                        if model_provider == "Anthropic":
+                            api_key = anthropic_api_key
+                        else:
+                            api_key = openai_api_key
+                        chunks = process_documents(all_documents, model_type=model_provider, api_key=api_key)
                         st.write(f"Debug - Created {len(chunks)} text chunks")
                         
                         # Load chunks into vector store
                         load_data_into_vectorstore(
                             vector_store,
                             chunks,
-                            openai_api_key,
+                            api_key,
                             collection_name,
                             {
                                 'is_cloud': is_deployed,
@@ -433,7 +437,7 @@ st.markdown(
     "Upload your documents and start chatting!"
 )
 
-def process_documents(documents: List[str]) -> List[str]:
+def process_documents(documents: List[str], model_type: str, api_key: str) -> List[str]:
     """Process documents into chunks."""
     chunks = []
     for doc in documents:
