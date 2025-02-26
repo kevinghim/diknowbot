@@ -205,8 +205,10 @@ with st.sidebar:
                 with col2:
                     st.write(f"${value_info['estimated_value']:,.2f}")
                 with col3:
-                    if filename in st.session_state['document_topics']:
+                    if filename in st.session_state['document_topics'] and st.session_state['document_topics'][filename]:
                         st.write(", ".join(st.session_state['document_topics'][filename]))
+                    else:
+                        st.write("No topics")
                 
                 with st.expander("View value factors"):
                     for factor in value_info['factors']:
@@ -360,8 +362,10 @@ if load_data_button:
                                     # Evaluate document value
                                     value_info = evaluate_document_value(content, pdf_file.name)
                                     st.session_state['document_values'][pdf_file.name] = value_info
-                                    st.session_state['total_document_value'] += value_info['estimated_value']
+                                    if pdf_file.name not in st.session_state['document_values']:
+                                        st.session_state['total_document_value'] += value_info['estimated_value']
                                     topics = extract_topics_with_llm(content, pdf_file.name, openai_api_key)
+                                    st.sidebar.write(f"Debug - Topics: {topics}")
                                     st.session_state['document_topics'][pdf_file.name] = topics
                                     st.sidebar.success(f"✅ Loaded PDF: {pdf_file.name}")
                                     st.sidebar.info(f"📊 Estimated value: ${value_info['estimated_value']}")
