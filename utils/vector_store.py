@@ -99,11 +99,20 @@ def load_chain(client, collection_name, embeddings, model_type="openai", model_n
     # Create the chat model
     if model_type.lower() == "anthropic":
         from langchain_anthropic import ChatAnthropic
-        llm = ChatAnthropic(
-            model=model_name,
-            anthropic_api_key=api_key,
-            temperature=0.7
-        )
+        try:
+            llm = ChatAnthropic(
+                model=model_name,
+                anthropic_api_key=api_key,
+                temperature=0.7
+            )
+        except Exception as e:
+            st.error(f"Error initializing Anthropic: {str(e)}")
+            # Fallback to OpenAI
+            from langchain_openai import ChatOpenAI
+            llm = ChatOpenAI(
+                model="gpt-3.5-turbo",
+                temperature=0.7
+            )
     else:  # default to OpenAI
         from langchain_openai import ChatOpenAI
         llm = ChatOpenAI(

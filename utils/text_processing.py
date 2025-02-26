@@ -8,7 +8,7 @@ def chunk_tokens(text: str, model_type: str, api_key: str = None) -> List[str]:
     Args:
         text (str): The text to chunk
         model_type (str): The model type for token counting
-        api_key (str): The API key for Anthropic
+        api_key (str): The API key for the model
         
     Returns:
         list: List of text chunks
