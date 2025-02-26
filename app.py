@@ -303,9 +303,12 @@ if load_data_button:
                         # Process documents into chunks
                         if model_provider == "Anthropic":
                             api_key = anthropic_api_key
+                            model_type = "anthropic"
                         else:
                             api_key = openai_api_key
-                        chunks = process_documents(all_documents, model_type=model_provider, api_key=api_key)
+                            model_type = "openai"
+                            
+                        chunks = process_documents(all_documents, model_type=model_type, api_key=api_key)
                         st.write(f"Debug - Created {len(chunks)} text chunks")
                         
                         # Load chunks into vector store
@@ -319,7 +322,8 @@ if load_data_button:
                                 'host': qdrant_host,
                                 'port': qdrant_port,
                                 'api_key': qdrant_api_key
-                            }
+                            },
+                            model_type=model_type  # Pass model_type here
                         )
                         
                         # Store the client and embeddings in session state

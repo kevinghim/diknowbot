@@ -9,6 +9,7 @@ from qdrant_client.http.models import Distance, VectorParams
 import streamlit as st
 from uuid import uuid4
 from langchain.schema import Document
+from langchain.memory import ConversationBufferMemory
 
 def connect_to_vectorstore(
     host: str,
@@ -95,38 +96,42 @@ def load_data_into_vectorstore(
         st.error(str(e))
         raise
 
-def load_chain(client: QdrantClient, api_key: str,
-               collection_name: str = "documents_collection",
-               model_type: str = "openai", model_name: str = "gpt-3.5-turbo"):
-    """
-    Load ConversationalRetrievalChain with specified LLM
-    
-    Args:
-        client (QdrantClient): Qdrant client
-        api_key (str): API key for the chosen model provider
-        collection_name (str): Vector store collection name
-        model_type (str): Type of model to use ('openai' or 'anthropic')
-        model_name (str): Specific model name
-        
-    Returns:
-        ConversationalRetrievalChain: Chain for question answering
-    """
-    # Use OpenAI embeddings
-    embeddings = OpenAIEmbeddings(openai_api_key=api_key)
+def load_chain(client, collection_name, embeddings, model_type="openai", model_name="gpt-3.5-turbo", api_key=None):
+    """Load a conversational retrieval chain."""
+    # Create Qdrant wrapper
     vectorstore = Qdrant(
-        client=client, 
-        collection_name=collection_name, 
+        client=client,
+        collection_name=collection_name,
         embeddings=embeddings
     )
     
+    # Create the chat model
     if model_type.lower() == "anthropic":
         from langchain_anthropic import ChatAnthropic
-        llm = ChatAnthropic(model=model_name, anthropic_api_key=api_key, temperature=0.0)
+        llm = ChatAnthropic(
+            model=model_name,
+            anthropic_api_key=api_key,
+            temperature=0.7
+        )
     else:  # default to OpenAI
-        llm = ChatOpenAI(temperature=0.0, model_name=model_name, openai_api_key=api_key)
-        
-    chain = ConversationalRetrievalChain.from_llm(
-        llm=llm,
-        retriever=vectorstore.as_retriever()
+        from langchain_openai import ChatOpenAI
+        llm = ChatOpenAI(
+            model=model_name,
+            openai_api_key=api_key,
+            temperature=0.7
+        )
+    
+    # Create memory
+    memory = ConversationBufferMemory(
+        memory_key="chat_history",
+        return_messages=True
     )
-    return chain
+    
+    # Create the conversation chain
+    qa_chain = ConversationalRetrievalChain.from_llm(
+        llm=llm,
+        retriever=vectorstore.as_retriever(search_kwargs={"k": 3}),
+        memory=memory
+    )
+    
+    return qa_chain
