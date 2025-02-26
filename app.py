@@ -204,11 +204,14 @@ with st.sidebar:
                     col1, col2 = st.columns([3, 1])
                     with col1:
                         st.write(f"📄 **{filename}**")
-                        if filename in st.session_state['document_topics'] and st.session_state['document_topics'][filename]:
-                            topic_tags = st.session_state['document_topics'][filename]
-                            st.write(" ".join([f"<span style='background-color:#e6f3ff; padding:2px 8px; border-radius:10px; margin-right:5px; font-size:0.8em;'>{topic}</span>" for topic in topic_tags]), unsafe_allow_html=True)
                     with col2:
                         st.write(f"**${value_info['estimated_value']:,.2f}**")
+                    
+                    # Add topics as an expander
+                    if filename in st.session_state['document_topics'] and st.session_state['document_topics'][filename]:
+                        with st.expander("View topics"):
+                            for topic in st.session_state['document_topics'][filename]:
+                                st.write(f"• {topic}")
                     
                     with st.expander("View value factors"):
                         for factor in value_info['factors']:
