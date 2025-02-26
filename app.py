@@ -199,21 +199,21 @@ with st.sidebar:
                 if selected_topic != "All Topics" and filename in st.session_state['document_topics'] and selected_topic not in st.session_state['document_topics'][filename]:
                     continue
                     
-                col1, col2, col3 = st.columns([2, 1, 1])
-                with col1:
-                    st.write(f"📄 {filename}")
-                with col2:
-                    st.write(f"${value_info['estimated_value']:,.2f}")
-                with col3:
-                    if filename in st.session_state['document_topics'] and st.session_state['document_topics'][filename]:
-                        st.write(", ".join(st.session_state['document_topics'][filename]))
-                    else:
-                        st.write("No topics")
-                
-                with st.expander("View value factors"):
-                    for factor in value_info['factors']:
-                        st.write(f"• {factor}")
-                st.divider()
+                # Create a container for each document
+                with st.container():
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        st.write(f"📄 **{filename}**")
+                        if filename in st.session_state['document_topics'] and st.session_state['document_topics'][filename]:
+                            topic_tags = st.session_state['document_topics'][filename]
+                            st.write(" ".join([f"<span style='background-color:#e6f3ff; padding:2px 8px; border-radius:10px; margin-right:5px; font-size:0.8em;'>{topic}</span>" for topic in topic_tags]), unsafe_allow_html=True)
+                    with col2:
+                        st.write(f"**${value_info['estimated_value']:,.2f}**")
+                    
+                    with st.expander("View value factors"):
+                        for factor in value_info['factors']:
+                            st.write(f"• {factor}")
+                    st.divider()
         else:
             st.info("No documents have been evaluated yet.")
             
