@@ -51,6 +51,7 @@ if 'document_values' not in st.session_state:
 
 if 'total_document_value' not in st.session_state:
     st.session_state['total_document_value'] = 0.0
+    st.write("Debug - Initialized total_document_value to 0.0")
     
 if 'document_topics' not in st.session_state:
     st.session_state['document_topics'] = {}
