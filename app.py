@@ -288,10 +288,6 @@ with st.sidebar:
             help="Name for the vector collection"
         )
     
-    # Debug output
-    st.write(f"Debug - is_deployed: {is_deployed}")
-    st.write(f"Debug - qdrant_host: {qdrant_host}")
-
     # Load data button
     load_data_button = st.button("Load Documents into Database", use_container_width=True)
 
@@ -383,7 +379,6 @@ if load_data_button:
                                     if pdf_file.name not in st.session_state['document_values']:
                                         st.session_state['total_document_value'] += value_info['estimated_value']
                                     topics = extract_topics_with_llm(content, pdf_file.name, openai_api_key)
-                                    st.sidebar.write(f"Debug - Topics: {topics}")
                                     st.session_state['document_topics'][pdf_file.name] = topics
                                     st.sidebar.success(f"✅ Loaded PDF: {pdf_file.name}")
                                     st.sidebar.info(f"📊 Estimated value: ${value_info['estimated_value']}")
@@ -432,7 +427,6 @@ if load_data_button:
                             embedding_api_key = openai_api_key
                             
                         chunks = process_documents(all_documents, model_type=model_type, api_key=api_key)
-                        st.write(f"Debug - Created {len(chunks)} text chunks")
                         
                         # Load chunks into vector store
                         load_data_into_vectorstore(
@@ -489,8 +483,6 @@ if st.session_state['documents_loaded']:
             st.error("No documents found in search")
             st.stop()
             
-        st.write(f"Found document: {docs[0].page_content[:100]}")
-        
         # Create the chat model
         if model_provider == "Anthropic":
             llm = ChatAnthropic(
@@ -575,11 +567,6 @@ def process_documents(documents: List[str], model_type: str, api_key: str) -> Li
                 chunk = doc[i:i + chunk_size].strip()
                 if chunk:  # Only add non-empty chunks
                     chunks.append(chunk)
-    
-    # Debug the chunks
-    st.write(f"Debug - Total chunks created: {len(chunks)}")
-    if chunks:
-        st.write("Debug - First chunk preview:", chunks[0][:100])
     
     if not chunks:
         raise ValueError("No valid text chunks were created from the documents")
